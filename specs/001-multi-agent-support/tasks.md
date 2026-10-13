@@ -163,7 +163,7 @@ Ao final, os contratos ficam **congelados**.
 
 - [X] T055 Rodar a suíte completa e o lint via `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests` e `... run --rm lint`; commitar por task no formato `feat(T049): descrição [REQ-...]`
 - [X] T056 Acionar o revisor somente leitura no diff do bloco com [checklists/block-review.md](./checklists/block-review.md) (segurança + orquestração); corrigir achados bloqueantes e repetir até liberar
-- [ ] T057 Criar as worktrees `../wt-us1`, `../wt-us2` e `../wt-us3` (branches `001-us1`, `001-us2`, `001-us3` a partir de `001-multi-agent-support`) e copiar `.specify/feature.json` para cada uma
+- [X] T057 Criar as worktrees `../wt-us1`, `../wt-us2` e `../wt-us3` (branches `001-us1`, `001-us2`, `001-us3` a partir de `001-multi-agent-support`) e copiar `.specify/feature.json` para cada uma
 
 **Checkpoint**: grafo executa com fakes e persiste estado; especialistas são stubs; contratos congelados; revisor liberou o bloco.
 
