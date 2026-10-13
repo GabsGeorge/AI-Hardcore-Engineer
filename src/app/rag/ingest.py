@@ -19,6 +19,7 @@ from app.db.pool import Pool, close_pool, open_pool
 from app.observability.logging import configure_logging, get_logger
 from app.rag.chunking import chunk_text, passage
 from app.rag.crawler import Crawler, Page, Sources, load_sources
+from app.rag.retriever import warm_reranker
 
 _UPSERT_DOCUMENT = """
 INSERT INTO documents (url, title, lang, source_type, content_hash, fetched_at)
@@ -120,6 +121,12 @@ async def main() -> None:
             )
         else:
             report = await ingest_sources(pool)
+            # Download the ~150 MB reranker here, into the shared models-cache volume, so no
+            # request waits on it (block review finding 2).
+            try:
+                await asyncio.to_thread(warm_reranker)
+            except Exception as exc:  # a reranker failure is not fatal: searches degrade honestly
+                get_logger().warning("reranker_warmup_failed", error=type(exc).__name__)
         get_logger().info("ingest_finished", seeded=seeded, **report)
     finally:
         await close_pool()

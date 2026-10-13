@@ -111,7 +111,21 @@ async def bm25_index(pool: Pool) -> Bm25Index | None:
                     (r["id"], r["lang"], passage(r["title"], r["section"], r["content"]))
                     for r in await cur.fetchall()
                 ]
-                cache.index = await asyncio.to_thread(Bm25Index, rows) if rows else None
+                # Decouple the build from the caller: a timed-out request must not scrap a
+                # minutes-long rebuild, or the next caller will restart it (finding 7).
+                if rows:
+                    task = asyncio.create_task(asyncio.to_thread(Bm25Index, rows))
+
+                    def _store(
+                        t: asyncio.Task[Bm25Index], fp: tuple[int, int] = fingerprint
+                    ) -> None:
+                        if not t.cancelled() and t.exception() is None:
+                            cache.index, cache.fingerprint = t.result(), fp
+
+                    task.add_done_callback(_store)
+                    cache.index = await asyncio.shield(task)
+                else:
+                    cache.index = None
                 cache.fingerprint = fingerprint
         cache.checked_at = now
         return cache.index
@@ -143,21 +157,28 @@ class Reranker(Protocol):
         ...
 
 
+def _flashrank_dir() -> Path:
+    cache = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+    return cache.parent / "flashrank"
+
+
 class FlashRankReranker:
-    """Multilingual cross-encoder (~150 MB, CPU). Downloaded on first use into the models cache
-    volume, never into the image or the repository (constitution XI)."""
+    """Multilingual cross-encoder (~150 MB, CPU). Download runs ONCE in `warm_reranker` (job or
+    lifespan): a search that arrives before the model is ready fails fast instead of parking a
+    thread on the download lock. The model lives in the `models-cache` volume (constitution XI)."""
 
     def __init__(self) -> None:
         self._ranker: Any = None
         self._lock = threading.Lock()
 
     def rerank(self, query: str, passages: list[str]) -> list[tuple[int, float]]:
-        with self._lock:
-            if self._ranker is None:
-                cache = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
-                self._ranker = Ranker(
-                    model_name=RERANK_MODEL, cache_dir=str(cache.parent / "flashrank")
-                )
+        if self._ranker is None:
+            if not self._lock.acquire(blocking=False):
+                raise RuntimeError("reranker is warming up; try again shortly")
+            try:
+                self._ranker = Ranker(model_name=RERANK_MODEL, cache_dir=str(_flashrank_dir()))
+            finally:
+                self._lock.release()
         request = RerankRequest(
             query=query, passages=[{"id": i, "text": p} for i, p in enumerate(passages)]
         )
@@ -178,6 +199,24 @@ def get_reranker() -> Reranker:
     if _reranker is None:
         _reranker = FlashRankReranker()
     return _reranker
+
+
+def warm_reranker() -> None:
+    """Load the model synchronously into the shared reranker. On failure a half-extracted model
+    directory is removed so the next warm-up does not reuse a corrupted cache. Call this from the
+    ingest job or the API lifespan so no request waits on the download."""
+    import shutil
+
+    global _reranker
+    reranker = _reranker if isinstance(_reranker, FlashRankReranker) else FlashRankReranker()
+    try:
+        reranker._ranker = Ranker(model_name=RERANK_MODEL, cache_dir=str(_flashrank_dir()))
+    except Exception:
+        model_dir = _flashrank_dir() / RERANK_MODEL
+        if model_dir.exists():
+            shutil.rmtree(model_dir, ignore_errors=True)
+        raise
+    _reranker = reranker
 
 
 class KbHit(KnowledgeHit):
