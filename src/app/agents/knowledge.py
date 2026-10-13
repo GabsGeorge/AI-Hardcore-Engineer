@@ -10,7 +10,6 @@ Confidence = min(self-assessment, objective signal) (research R-07).
 """
 
 import asyncio
-import re
 from typing import Any, Literal
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -39,7 +38,6 @@ UNAVAILABLE = {
     "to talk to a human agent.",
 }
 _REWRITE_MARKER = "<!-- query-rewrite -->"
-_DELIMITER = re.compile(r"</?\s*untrusted_context[^>]*>", re.I)
 
 
 class QueryVariant(BaseModel):
@@ -112,10 +110,15 @@ async def _search(
     return hits, [record for _, record in calls], any(r["status"] == "ok" for _, r in calls)
 
 
+def _as_data(text: str) -> str:
+    """Escapes angle brackets so retrieved text can never form (or reassemble) a tag."""
+    return text.replace("<", "&lt;").replace(">", "&gt;")
+
+
 def _context(items: list[tuple[str, str]]) -> str:
-    """Numbered items; delimiter tags are removed so retrieved text cannot close the block."""
+    """Numbered items, escaped so retrieved text cannot close the block (REQ-GR-05)."""
     body = "\n\n".join(
-        f"[{i}] {_DELIMITER.sub('', header)}\n{_DELIMITER.sub('', text)}"
+        f"[{i}] {_as_data(header)}\n{_as_data(text)}"
         for i, (header, text) in enumerate(items, start=1)
     )
     return f"<untrusted_context>\n{body}\n</untrusted_context>"

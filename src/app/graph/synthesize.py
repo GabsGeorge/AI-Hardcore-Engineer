@@ -25,8 +25,11 @@ SAFE = {
     "terminals and transactions.",
 }
 
-# Answers may quote retrieved text; they must not be able to open or close the data delimiter.
-_DELIMITER = re.compile(r"</?\s*specialist_answer[^>]*>", re.I)
+
+def _as_data(text: str) -> str:
+    """Answers may quote retrieved text: escaped so they can never form a delimiter tag."""
+    return text.replace("<", "&lt;").replace(">", "&gt;")
+
 
 _EN_HINTS = re.compile(
     r"\b(the|what|when|how|can|my|is|are|do|does|will|with|which|why|i|you|today)\b", re.I
@@ -74,8 +77,7 @@ async def synthesize(state: AgentState) -> dict[str, Any]:
     )
     # Delimited as data: answers may quote retrieved web or knowledge-base text (REQ-GR-05).
     parts = "\n".join(
-        f'<specialist_answer agent="{r["agent"]}">\n{_DELIMITER.sub("", r["answer"])}\n'
-        "</specialist_answer>"
+        f'<specialist_answer agent="{r["agent"]}">\n{_as_data(r["answer"])}\n</specialist_answer>'
         for r in answers
     )
     messages: list[BaseMessage] = [
