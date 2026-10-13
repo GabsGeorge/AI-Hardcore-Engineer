@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request, Response
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.asyncio import Redis
 
 from app.api import chat, health
@@ -11,6 +12,7 @@ from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.db.migrate import migrate
 from app.db.pool import close_pool, open_pool
+from app.graph.builder import build_graph
 from app.observability.logging import configure_logging, get_logger
 from app.observability.tracing import configure_tracing, current_trace_id, get_tracer
 
@@ -22,8 +24,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_tracing(settings.otel_exporter_otlp_endpoint)
     pool = await open_pool(settings.database_url)
     await migrate(pool)
+    checkpointer = AsyncPostgresSaver(pool)
+    await checkpointer.setup()
+    app.state.graph = build_graph(checkpointer)
     app.state.redis = Redis.from_url(settings.redis_url)
-    app.state.graph = None  # the agent graph is wired in the next block (T053)
     try:
         yield
     finally:
