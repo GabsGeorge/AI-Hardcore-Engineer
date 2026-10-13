@@ -80,6 +80,6 @@ obrigatórias de segurança e de orquestração da constitution.
 | Bloco | Data | Segurança | Orquestração | Achados bloqueantes | Liberado? |
 | --- | --- | --- | --- | --- | --- |
 | Fase 0 + grafo base | 2026-10-13 | ✅ (achados 1 e 2 corrigidos) | ✅ (achados 3, 5 e 6 corrigidos; 4 registrado na T120) | 1 (auditoria sem máscara) — corrigido em d67ff1c | ✅ LIBERADO na re-revisão |
-| US2 + US1 + US3 | | | | | |
+| US2 + US1 + US3 | 2026-10-13 | ✅ (achados 1 e 3 corrigidos) | ✅ (achados 2, 4, 5, 6 e 7 corrigidos) | 1 (delimitador aninhado remontável) — corrigido em 38ede50 | ✅ LIBERADO |
 | Fase 2 | | | | | |
 | Fase 3 | | | | | |
