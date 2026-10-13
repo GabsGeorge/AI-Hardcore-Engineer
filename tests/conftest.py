@@ -43,6 +43,10 @@ APP_TABLES = [
     "merchants",
     "decline_codes",
     "users",
+    # LangGraph checkpoint tables (created by AsyncPostgresSaver.setup in the app lifespan)
+    "checkpoints",
+    "checkpoint_blobs",
+    "checkpoint_writes",
 ]
 
 

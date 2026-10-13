@@ -79,7 +79,7 @@ obrigatórias de segurança e de orquestração da constitution.
 
 | Bloco | Data | Segurança | Orquestração | Achados bloqueantes | Liberado? |
 | --- | --- | --- | --- | --- | --- |
-| Fase 0 + grafo base | | | | | |
+| Fase 0 + grafo base | 2026-10-13 | ✅ (achados 1 e 2 corrigidos) | ✅ (achados 3, 5 e 6 corrigidos; 4 registrado na T120) | 1 (auditoria sem máscara) — corrigido em d67ff1c | ✅ LIBERADO na re-revisão |
 | US2 + US1 + US3 | | | | | |
 | Fase 2 | | | | | |
 | Fase 3 | | | | | |

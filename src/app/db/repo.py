@@ -48,7 +48,7 @@ async def insert_audit_event(
                 actor_id,
                 actor_role,
                 action,
-                target,
+                _scrub(target),  # targets may echo client input (e.g. a foreign user_id)
                 outcome,
                 trace_id,
                 Jsonb(_scrub(metadata or {})),
