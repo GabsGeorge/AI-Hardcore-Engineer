@@ -1,9 +1,9 @@
 import pytest
-from app.rag.chunking import passage
 
 from app.core.config import get_settings
 from app.db.pool import Pool
 from app.rag import retriever
+from app.rag.chunking import passage
 from tests.fakes import FakeLLM
 from tests.fixtures.kb import (
     ADVANCE_EN_URL,

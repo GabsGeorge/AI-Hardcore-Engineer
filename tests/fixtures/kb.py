@@ -4,13 +4,13 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
-from app.rag.chunking import passage
 from langchain_core.runnables import RunnableConfig
 
 from app.agents.knowledge import knowledge_node
 from app.db.pool import Pool
 from app.graph.state import SpecialistInput
 from app.rag import retriever
+from app.rag.chunking import passage
 from tests.fakes import FakeReranker, fake_embeddings
 
 SMART_URL = "https://site.getnet.com.br/maquininhas/"
@@ -58,7 +58,7 @@ async def add_document(
                 await conn.execute(
                     "INSERT INTO chunks (document_id, ord, section, content, lang, embedding)"
                     " VALUES (%s, %s, %s, %s, %s, %s::vector) RETURNING id",
-                    (row["id"], ord_, section, content, lang, str(vector)),
+                    (row["id"], ord_, section, content, lang, str([float(x) for x in vector])),
                 )
             ).fetchone()
             assert chunk is not None

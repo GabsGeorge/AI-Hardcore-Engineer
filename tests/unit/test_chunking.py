@@ -1,7 +1,7 @@
 import pytest
+
 from app.rag.chunking import MAX_TOKENS, MIN_TOKENS, OVERLAP_TOKENS, chunk_text, count_tokens
 from app.rag.crawler import extract
-
 from tests.fixtures.site import BASE, FIXTURES
 
 pytestmark = pytest.mark.req("REQ-RAG-03")

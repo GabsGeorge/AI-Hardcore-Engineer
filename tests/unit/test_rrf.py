@@ -1,4 +1,5 @@
 import pytest
+
 from app.rag.retriever import RRF_K, rrf
 
 pytestmark = pytest.mark.req("REQ-RAG-04")

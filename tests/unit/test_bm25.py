@@ -1,4 +1,5 @@
 import pytest
+
 from app.rag.retriever import Bm25Index, tokenize
 
 pytestmark = pytest.mark.req("REQ-RAG-04")
