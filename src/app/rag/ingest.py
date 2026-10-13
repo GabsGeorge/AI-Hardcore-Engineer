@@ -111,7 +111,10 @@ async def main() -> None:
     pool = await open_pool(settings.database_url)
     try:
         await migrate(pool)
-        seeded = await apply_seed(pool, settings.seed_reference_date or date.today())
+        # Mock data belongs to local/test only: it deletes and reinserts the seed merchants.
+        seeded = False
+        if settings.app_env != "production":
+            seeded = await apply_seed(pool, settings.seed_reference_date or date.today())
         key = settings.openai_api_key
         if key is None or not key.get_secret_value():
             # The API waits for this job to finish: without a key it still has to succeed.

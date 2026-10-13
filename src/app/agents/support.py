@@ -12,6 +12,7 @@ from langchain_core.runnables import RunnableConfig
 from pydantic_core import to_jsonable_python
 
 from app.agents.common import call_tool, make_result
+from app.core.config import get_settings
 from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import SpecialistInput, ToolCallRecord
@@ -60,7 +61,11 @@ async def support_node(state: SpecialistInput, config: RunnableConfig) -> dict[s
     records: list[ToolCallRecord] = []
     tokens, answer = 0, ""
 
+    budget = get_settings().token_budget_per_run
     for round_index in range(MAX_ROUNDS):
+        # Stop early if the per-run budget is spent; the supervisor still owns the final decision.
+        if tokens >= budget:
+            break
         # Last round: no tools, the model MUST answer with the data it already has.
         model = plain if round_index == MAX_ROUNDS - 1 else tooled
         try:
