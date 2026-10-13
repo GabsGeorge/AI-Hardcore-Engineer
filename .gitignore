@@ -39,3 +39,9 @@ evals/reports/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Third-party Claude skills not used in this delivery yet (kept locally). If one is used,
+# remove its line here and commit it with its LICENSE (and NOTICE for Apache 2.0).
+.claude/skills/ponytail*/
+.claude/skills/impeccable/
+.claude/agents/impeccable-*.md

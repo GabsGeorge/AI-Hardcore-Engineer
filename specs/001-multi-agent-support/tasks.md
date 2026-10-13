@@ -427,22 +427,23 @@ Ao final, os contratos ficam **congelados**.
 - [ ] T169 [P] Criar `deploy/k6/chat.js` (20 VUs, mix simples/composto) com `thresholds` p95 8 s e 15 s que fazem o k6 sair com erro se violados — este é o teste de REQ-REL-04 — e o profile `load` no compose (REQ-REL-04)
 - [ ] T170 Rodar a carga e registrar o resultado em `docs/reports/load-test.md` (REQ-REL-04)
 - [ ] T171 Escrever `README.md`: build, configuração, execução, testes, lint e avaliação com o comando `docker compose` de cada um (sem exigir Python nem `make` no host; `Makefile` citado como atalho opcional; `uvx pre-commit install` para o hook), arquitetura e fluxo de mensagem, pipeline RAG com números da avaliação, uso de LLMs e tools, prompts, segurança, guardrails, observabilidade, core vs extensão, limitações e links para `specs/` e `docs/adr/` (REQ-INF-06)
-- [ ] T172 [P] Escrever `docs/video-script.md` com o roteiro de 15 min (problema, arquitetura, demo, trace, testes, trade-offs)
+- [ ] T172 Escrever no `README.md` a seção "Como este projeto foi construído": o fluxo do Spec Kit (constitution → specify → clarify → plan → tasks → analyze → implement) com o que cada etapa produziu; onde estão os artefatos (`.specify/memory/constitution.md`, `specs/001-multi-agent-support/` com spec, plan, research, data-model, contracts, threat-model, quickstart e tasks, e `checklists/` com `requirements.md` e `block-review.md`); como ler a rastreabilidade REQ → task → teste (`@pytest.mark.req`, `docs/traceability.md`) → commit (`feat(T049): ... [REQ-...]`); e quais skills foram usadas e para quê (Spec Kit e, se usadas até a entrega, Ponytail e Impeccable com suas licenças) (REQ-INF-06)
+- [ ] T173 [P] Escrever `docs/video-script.md` com o roteiro de 15 min (problema, arquitetura, demo, trace, testes, trade-offs)
 
 ### Fechamento do bloco (Fase 3)
 
-- [ ] T173 Integrar as worktrees da Fase 3 em `001-multi-agent-support`, rodar a suíte completa e o lint via `docker compose` e commitar por task no formato `feat(T049): descrição [REQ-...]`
-- [ ] T174 Acionar o revisor somente leitura no diff integrado com [checklists/block-review.md](./checklists/block-review.md); corrigir achados bloqueantes e repetir até liberar
+- [ ] T174 Integrar as worktrees da Fase 3 em `001-multi-agent-support`, rodar a suíte completa e o lint via `docker compose` e commitar por task no formato `feat(T049): descrição [REQ-...]`
+- [ ] T175 Acionar o revisor somente leitura no diff integrado com [checklists/block-review.md](./checklists/block-review.md); corrigir achados bloqueantes e repetir até liberar
 
 ## Phase 15: Polish & Cross-Cutting Concerns
 
 **Purpose**: Validação final antes da entrega.
 
-- [ ] T175 Executar `/ponytail-audit` no repositório e aplicar os achados "Must fix" e "Should fix"
-- [ ] T176 Executar `/security-review` e revisar o threat model contra o código final (`specs/001-multi-agent-support/threat-model.md`)
-- [ ] T177 Executar `/ponytail-debt` e registrar os `shortcut:` aceitos na seção de limitações do README
-- [ ] T178 Validar `specs/001-multi-agent-support/quickstart.md` do zero num clone limpo (sem `make` e com `make`)
-- [ ] T179 Atualizar `docs/architecture.drawio` com o que mudou durante a implementação
+- [ ] T176 Executar `/ponytail-audit` no repositório e aplicar os achados "Must fix" e "Should fix"
+- [ ] T177 Executar `/security-review` e revisar o threat model contra o código final (`specs/001-multi-agent-support/threat-model.md`)
+- [ ] T178 Executar `/ponytail-debt` e registrar os `shortcut:` aceitos na seção de limitações do README
+- [ ] T179 Validar `specs/001-multi-agent-support/quickstart.md` do zero num clone limpo (sem `make` e com `make`)
+- [ ] T180 Atualizar `docs/architecture.drawio` com o que mudou durante a implementação
 
 ---
 
