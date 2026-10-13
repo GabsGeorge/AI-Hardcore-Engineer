@@ -45,3 +45,15 @@ def test_stdlib_and_uvicorn_logs_are_json_and_masked(capsys: pytest.CaptureFixtu
     assert "529.982" not in out and "4111 1111" not in out
     assert "[CPF]" in lines[0]["event"]
     assert "[CARTAO]" in lines[1]["exception"]
+
+
+@pytest.mark.req("REQ-OBS-01", "REQ-GR-02")
+def test_structlog_exception_keeps_masked_traceback(capsys: pytest.CaptureFixture[str]) -> None:
+    configure_logging()
+    try:
+        raise ValueError("cpf 529.982.247-25")
+    except ValueError:
+        get_logger().exception("boom")
+    event = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert "ValueError" in event["exception"]
+    assert "[CPF]" in event["exception"] and "529.982" not in event["exception"]
