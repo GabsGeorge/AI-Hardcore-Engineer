@@ -87,3 +87,25 @@ async def test_second_turn_reuses_the_callers_conversation(
     assert second.json()["conversation_id"] == first["conversation_id"]
     # Per-turn fields were reset: the second route is not appended to the first.
     assert second.json()["route"].count("input_guardrail") == 1
+
+
+@pytest.mark.req("REQ-MEM-01", "REQ-SEC-02")
+async def test_other_users_conversation_is_404_like_a_missing_one(
+    client: httpx.AsyncClient, fake_llm: FakeLLM, auth_headers: dict[str, dict[str, str]]
+) -> None:
+    fake_llm.script(supervisor=[ValueError("down")])
+    owner = (
+        await client.post("/v1/chat", json={"message": "oi"}, headers=auth_headers["cliente1988"])
+    ).json()
+    stolen = await client.post(
+        "/v1/chat",
+        json={"message": "oi", "conversation_id": owner["conversation_id"]},
+        headers=auth_headers["cliente2024"],
+    )
+    missing = await client.post(
+        "/v1/chat",
+        json={"message": "oi", "conversation_id": "00000000-0000-4000-8000-000000000000"},
+        headers=auth_headers["cliente2024"],
+    )
+    assert stolen.status_code == missing.status_code == 404
+    assert stolen.json()["error"] == missing.json()["error"]
