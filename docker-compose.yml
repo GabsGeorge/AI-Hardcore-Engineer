@@ -1,0 +1,55 @@
+# docker compose up -d --build   (copy .env.example to .env and fill it first)
+x-app-env: &app-env
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:-}@postgres:5432/app
+    REDIS_URL: redis://redis:6379/0
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ingest:
+    build: { context: ., target: runtime }
+    <<: *app-env
+    command: ["python", "-m", "app.rag.ingest"]
+    volumes:
+      - models-cache:/home/app/.cache
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: { context: ., target: runtime }
+    <<: *app-env
+    ports:
+      - "8000:8000"
+    volumes:
+      - models-cache:/home/app/.cache
+    depends_on:
+      ingest: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  models-cache:

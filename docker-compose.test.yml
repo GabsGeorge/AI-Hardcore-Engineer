@@ -1,0 +1,54 @@
+# Tests and lint run here, on an internal network with no route to the internet (REQ-INF-03).
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm lint
+x-test-env: &test-env
+  DATABASE_URL: postgresql://test:test@test-postgres:5432/test
+  REDIS_URL: redis://test-redis:6379/0
+  APP_ENV: test
+
+services:
+  test-postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_DB: test
+      POSTGRES_PASSWORD: test
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks: [testnet]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  test-redis:
+    image: redis:7-alpine
+    networks: [testnet]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  tests:
+    build: { context: ., target: dev }
+    environment: *test-env
+    volumes:
+      - .:/repo
+    networks: [testnet]
+    command: ["pytest", "--cov", "--cov-report=term-missing:skip-covered"]
+    depends_on:
+      test-postgres: { condition: service_healthy }
+      test-redis: { condition: service_healthy }
+
+  lint:
+    build: { context: ., target: dev }
+    volumes:
+      - .:/repo
+    network_mode: none
+    command: ["sh", "-c", "ruff check . && ruff format --check . && mypy"]
+
+networks:
+  testnet:
+    internal: true

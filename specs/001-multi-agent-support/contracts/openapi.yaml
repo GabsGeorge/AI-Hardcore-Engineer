@@ -1,0 +1,404 @@
+openapi: 3.1.0
+info:
+  title: Getnet Multi-Agent Support API
+  version: 1.0.0
+  description: >
+    API de atendimento multi-agente para lojistas Getnet. O usuário efetivo vem
+    exclusivamente do JWT (Bearer). `user_id` no corpo é opcional e, se diferente
+    do token, a requisição é recusada com 403 sem executar agentes.
+servers:
+  - url: http://localhost:8000
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/chat:
+    post:
+      summary: Envia uma mensagem ao Supervisor
+      operationId: postChat
+      x-requirements: [REQ-API-01, REQ-API-02, REQ-API-03, REQ-SEC-01, REQ-SEC-02, REQ-API-06]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+            examples:
+              recebiveis:
+                value: { message: "Quando cai o dinheiro das vendas de ontem?", user_id: "cliente1988" }
+      responses:
+        '200':
+          description: Resposta do sistema (inclui handoff aguardando humano)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /v1/chat/stream:
+    post:
+      summary: Mesma operação de /v1/chat com Server-Sent Events (P2)
+      operationId: postChatStream
+      x-requirements: [REQ-API-07]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+      responses:
+        '200':
+          description: >
+            Stream `text/event-stream` com eventos `agent_step`, `token` e `done`
+            (ver contracts/events.md). `done` carrega um ChatResponse completo.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /v1/conversations/{conversation_id}:
+    get:
+      summary: Lê uma conversa própria (canal base de entrega da resposta humana)
+      operationId: getConversation
+      x-requirements: [REQ-API-05, REQ-MEM-01, REQ-HITL-03]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Conversa do usuário autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/conversations/{conversation_id}/events:
+    get:
+      summary: Canal SSE de eventos da conversa (P2)
+      operationId: getConversationEvents
+      x-requirements: [REQ-API-07]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Stream com eventos `handoff_update` e `final_message`
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/handoffs:
+    get:
+      summary: Fila de handoffs (somente operator/admin)
+      operationId: listHandoffs
+      x-requirements: [REQ-HITL-06, REQ-SEC-06]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/HandoffStatus' }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Tickets ordenados por prioridade e criação
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Handoff' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /v1/handoffs/{ticket_id}/reply:
+    post:
+      summary: Operador responde (e aprova/rejeita ação pendente); retoma a mesma execução
+      operationId: replyHandoff
+      x-requirements: [REQ-HITL-03, REQ-HITL-04, REQ-SEC-06]
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HandoffReply' }
+      responses:
+        '200':
+          description: Execução retomada; mensagem final disponível na conversa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Handoff' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /v1/feedback:
+    post:
+      summary: Feedback do usuário ligado ao trace (P2)
+      operationId: postFeedback
+      x-requirements: [REQ-OBS-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FeedbackRequest' }
+      responses:
+        '204': { description: Registrado }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /v1/me/data:
+    delete:
+      summary: Exclui conversas, execuções e feedback do usuário (LGPD, P2)
+      operationId: deleteMyData
+      x-requirements: [REQ-SEC-09]
+      responses:
+        '204': { description: Dados removidos; auditoria pseudonimizada }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /healthz:
+    get:
+      summary: Liveness
+      operationId: healthz
+      security: []
+      x-requirements: [REQ-API-04]
+      responses:
+        '200':
+          description: Processo vivo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { status: { type: string, const: ok } }
+
+  /readyz:
+    get:
+      summary: Readiness (banco, índice, Redis, modelo)
+      operationId: readyz
+      security: []
+      x-requirements: [REQ-API-04]
+      responses:
+        '200':
+          description: Pronto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+        '503':
+          description: Alguma dependência indisponível
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "HS256; claims sub, role (merchant|operator|admin), exp, iss, aud."
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 8, maxLength: 128 }
+    ConversationId:
+      name: conversation_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    ChatRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 4000, description: "Não pode ser só espaços." }
+        user_id: { type: string, maxLength: 64, description: "Opcional; se presente, deve ser igual ao sub do token." }
+        conversation_id: { type: string, format: uuid }
+
+    ChatResponse:
+      type: object
+      required: [response, conversation_id, route, sources, tools_used, confidence, handoff, guardrails, trace_id]
+      properties:
+        response: { type: string }
+        conversation_id: { type: string, format: uuid }
+        route:
+          type: array
+          items: { type: string, enum: [input_guardrail, supervisor, knowledge, support, escalation, synthesize, degraded_response, safe_response, output_guardrail] }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/Source' }
+        tools_used:
+          type: array
+          items: { $ref: '#/components/schemas/ToolCall' }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        handoff: { $ref: '#/components/schemas/HandoffRef' }
+        guardrails:
+          type: object
+          required: [input, output]
+          properties:
+            input: { type: string, enum: [pass, masked, blocked] }
+            output: { type: string, enum: [pass, rewritten, blocked] }
+        trace_id: { type: string, pattern: '^[0-9a-f]{32}$' }
+
+    Source:
+      type: object
+      required: [title, url, kind]
+      properties:
+        title: { type: string }
+        url: { type: string, format: uri }
+        kind: { type: string, enum: [kb, web] }
+        retrieved_at: { type: string, format: date-time }
+
+    ToolCall:
+      type: object
+      required: [name, status, latency_ms]
+      properties:
+        name: { type: string }
+        status: { type: string, enum: [ok, error, timeout, denied] }
+        latency_ms: { type: integer, minimum: 0 }
+
+    HandoffStatus:
+      type: string
+      enum: [none, awaiting_human, resolved, expired]
+
+    HandoffRef:
+      type: object
+      required: [status, ticket_id]
+      properties:
+        status: { $ref: '#/components/schemas/HandoffStatus' }
+        ticket_id: { type: [string, 'null'], format: uuid }
+
+    Conversation:
+      type: object
+      required: [conversation_id, handoff, messages, last_activity_at]
+      properties:
+        conversation_id: { type: string, format: uuid }
+        handoff: { $ref: '#/components/schemas/HandoffRef' }
+        last_activity_at: { type: string, format: date-time }
+        messages:
+          type: array
+          items:
+            type: object
+            required: [role, content]
+            properties:
+              role: { type: string, enum: [user, assistant] }
+              content: { type: string, description: "PII mascarada." }
+              trace_id: { type: string }
+
+    Handoff:
+      type: object
+      required: [ticket_id, conversation_id, reason, status, priority, summary, created_at, sla_due_at, expires_at]
+      properties:
+        ticket_id: { type: string, format: uuid }
+        conversation_id: { type: string, format: uuid }
+        reason: { type: string, enum: [low_confidence, human_request, sensitive_topic, repeated_failures, side_effect_action] }
+        status: { type: string, enum: [awaiting_human, resolved, expired] }
+        priority: { type: string, enum: [normal, high] }
+        summary: { type: string }
+        context:
+          type: object
+          properties:
+            route: { type: array, items: { type: string } }
+            tools_used: { type: array, items: { $ref: '#/components/schemas/ToolCall' } }
+            recent_messages: { type: array, items: { type: string } }
+        pending_action:
+          type: [object, 'null']
+          properties:
+            type: { type: string, enum: [open_dispute] }
+            params: { type: object }
+            decision: { type: string, enum: [pending, approved, rejected] }
+        created_at: { type: string, format: date-time }
+        sla_due_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        operator_reply: { type: [string, 'null'] }
+        resolved_at: { type: [string, 'null'], format: date-time }
+
+    HandoffReply:
+      type: object
+      additionalProperties: false
+      required: [reply]
+      properties:
+        reply: { type: string, minLength: 1, maxLength: 4000 }
+        action_decision:
+          type: [string, 'null']
+          enum: [approve, reject, null]
+          description: "Obrigatório quando o ticket tem pending_action."
+
+    FeedbackRequest:
+      type: object
+      additionalProperties: false
+      required: [trace_id, rating]
+      properties:
+        trace_id: { type: string, pattern: '^[0-9a-f]{32}$' }
+        rating: { type: integer, enum: [-1, 1] }
+        comment: { type: string, maxLength: 1000 }
+
+    Readiness:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [ready, not_ready] }
+        checks:
+          type: object
+          properties:
+            database: { type: string, enum: [ok, fail] }
+            index: { type: string, enum: [ok, empty, fail] }
+            redis: { type: string, enum: [ok, fail] }
+            llm: { type: string, enum: [ok, fail, open_circuit] }
+
+    Error:
+      type: object
+      required: [error, trace_id]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, examples: [unauthorized, forbidden_user_mismatch, forbidden_role, not_found, idempotency_conflict, ticket_closed, validation_error, rate_limited] }
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+        trace_id: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Token ausente, inválido ou expirado
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: user_id divergente do token ou papel insuficiente (auditado)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Recurso inexistente ou de outro usuário (não revela existência)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Idempotency-Key reutilizada com corpo diferente, ou ticket já encerrado
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: Payload inválido; nenhum agente executado
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Mais de 30 requisições por minuto
+      headers:
+        Retry-After: { schema: { type: integer }, description: Segundos até nova tentativa }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

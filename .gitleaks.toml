@@ -1,0 +1,8 @@
+title = "getnet-support gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Only the empty template of environment variables is allowed"
+paths = ['''^\.env\.example$''']
