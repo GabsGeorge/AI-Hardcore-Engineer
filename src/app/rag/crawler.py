@@ -6,6 +6,7 @@ from elsewhere (threat model LLM04). HTML goes through trafilatura (boilerplate 
 and tables kept as Markdown); PDFs through pypdf.
 """
 
+import contextlib
 import io
 import re
 from dataclasses import dataclass, replace
@@ -27,6 +28,7 @@ SOURCES_FILE = Path(__file__).with_name("sources.yaml")
 USER_AGENT = "GetnetSupportBot/1.0 (knowledge-base ingestion)"
 MAX_BYTES = 10 * 1024 * 1024
 MAX_REDIRECTS = 5
+_DISALLOW_ALL = ["User-agent: *", "Disallow: /"]
 
 Lang = Literal["pt", "en"]
 SourceType = Literal["page", "faq", "pdf"]
@@ -137,21 +139,19 @@ class Crawler:
         parts = urlsplit(url)
         origin = f"{parts.scheme}://{parts.netloc}"
         if origin not in self._robots:
-            parser = RobotFileParser()
-            try:
+            rules = _DISALLOW_ALL  # forbidden or unreachable robots.txt: be conservative
+            with contextlib.suppress(httpx.HTTPError):
                 resp = await self.client.get(
                     f"{origin}/robots.txt",
                     headers={"User-Agent": USER_AGENT},
                     follow_redirects=False,
                 )
                 if resp.status_code == 200:
-                    parser.parse(resp.text.splitlines())
+                    rules = resp.text.splitlines()
                 elif 400 <= resp.status_code < 500 and resp.status_code not in (401, 403):
-                    parser.allow_all = True  # no robots.txt: everything is allowed
-                else:
-                    parser.disallow_all = True  # forbidden or unreachable: be conservative
-            except httpx.HTTPError:
-                parser.disallow_all = True
+                    rules = []  # no robots.txt: everything is allowed
+            parser = RobotFileParser()
+            parser.parse(rules)
             self._robots[origin] = parser
         return self._robots[origin].can_fetch(USER_AGENT, url)
 

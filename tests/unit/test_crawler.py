@@ -1,7 +1,7 @@
 import httpx
 import pytest
-from app.rag.crawler import Crawler, Seed, SitemapSource, Sources, extract, is_allowed, load_sources
 
+from app.rag.crawler import Crawler, Seed, SitemapSource, Sources, extract, is_allowed, load_sources
 from tests.fixtures.site import BASE, FIXTURES, OUTSIDE, FakeSite
 
 pytestmark = pytest.mark.req("REQ-RAG-01")
@@ -77,15 +77,25 @@ async def test_sitemap_include_filter_and_page_limit() -> None:
     assert len(limited) == 1
 
 
-async def test_unreachable_robots_txt_blocks_the_host() -> None:
+@pytest.mark.parametrize(
+    ("status", "fetched"),
+    [(503, False), (403, False), (401, False), (302, False), (404, True)],
+)
+async def test_robots_txt_status_policy(status: int, fetched: bool) -> None:
+    """Missing robots.txt allows the host; forbidden, redirected or unreachable blocks it."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/robots.txt":
-            return httpx.Response(503)
-        return httpx.Response(200, text="<html><body><p>conteúdo</p></body></html>")
+            return httpx.Response(status, headers={"Location": "https://x.example/"})
+        html = (
+            "<html><body><h1>Pix</h1><p>O Pix na maquininha Getnet é instantâneo.</p></body></html>"
+        )
+        return httpx.Response(200, text=html, headers={"Content-Type": "text/html"})
 
+    sources = SOURCES.model_copy(update={"seeds": [Seed(url=f"{BASE}/pix/")], "sitemaps": []})
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        pages = await Crawler(SOURCES.model_copy(update={"sitemaps": []}), client).crawl()
-    assert pages == []
+        pages = await Crawler(sources, client).crawl()
+    assert [p.url for p in pages] == ([f"{BASE}/pix/"] if fetched else [])
 
 
 def test_extract_html_keeps_structure_and_drops_boilerplate() -> None:
