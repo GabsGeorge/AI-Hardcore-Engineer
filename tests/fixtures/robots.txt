@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /privado/
+Sitemap: https://site.getnet.com.br/sitemap.xml
