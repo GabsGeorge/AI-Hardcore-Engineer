@@ -5,6 +5,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.core.config import get_settings
 from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentState
@@ -62,10 +63,17 @@ async def synthesize(state: AgentState) -> dict[str, Any]:
         return _reply(DEGRADED.get(language, DEGRADED["en"]), "synthesize")
     if len(answers) == 1:
         return _reply(answers[0]["answer"], "synthesize")
+    if state.get("tokens_used", 0) >= get_settings().token_budget_per_run:
+        # Over budget: no model call; the answers are joined as they are (REQ-ORC-04).
+        return _reply("\n\n".join(r["answer"] for r in answers), "synthesize")
     question = next(
         (str(m.content) for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), ""
     )
-    parts = "\n\n".join(f"[{r['agent']}] {r['answer']}" for r in answers)
+    # Delimited as data: answers may quote retrieved web or knowledge-base text (REQ-GR-05).
+    parts = "\n".join(
+        f'<specialist_answer agent="{r["agent"]}">\n{r["answer"]}\n</specialist_answer>'
+        for r in answers
+    )
     messages: list[BaseMessage] = [
         SystemMessage(content=load_prompt("synthesize").replace("{language}", language)),
         HumanMessage(content=f"Merchant question:\n{question}\n\nSpecialist answers:\n{parts}"),
