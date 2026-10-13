@@ -1,0 +1,52 @@
+# Public Getnet content indexed by `python -m app.rag.ingest` (REQ-RAG-01, research R-17).
+# Only hosts under `allowed_domains` (and their subdomains) are fetched, always over https and
+# only where robots.txt allows. Seeds are curated because parts of the site are rendered by JS
+# and the sitemap is incomplete; together they cover the 10 golden-set scenarios.
+# No public English Getnet Brasil page was found: EN questions reach PT content through the
+# PT↔EN query rewrite (REQ-RAG-05). Add EN seeds here with `lang: en` when available.
+allowed_domains:
+  - getnet.com.br
+
+max_pages: 60
+
+seeds:
+  # Card machines (scenarios 1, 5)
+  - url: https://site.getnet.com.br/todas-as-maquininhas/
+  - url: https://site.getnet.com.br/maquininha-de-cartao/
+  - url: https://site.getnet.com.br/melhor-maquininha-para-o-seu-negocio/
+  - url: https://site.getnet.com.br/5-funcionalidades-da-maquininha-getnet-para-vender-mais/
+  - url: https://site.getnet.com.br/boas-vindas/manual-maquinas/
+    type: faq
+  - url: https://site.getnet.com.br/get-tap/
+  - url: https://site.getnet.com.br/duvidas/get-tap/
+    type: faq
+  - url: https://site.getnet.com.br/tap-on-phone-maquininha-no-celular/
+  # Pix
+  - url: https://site.getnet.com.br/pix/
+  - url: https://site.getnet.com.br/pix-na-maquininha-getnet/
+  - url: https://site.getnet.com.br/pix-por-aproximacao/
+  # Receivables advance and settlements (scenarios 3, 6)
+  - url: https://site.getnet.com.br/get-ajuda-reserva-financeira/antecipacao-reserva-financeira/
+    type: faq
+  - url: https://site.getnet.com.br/quando-vale-a-pena-antecipar-as-suas-vendas-no-cartao/
+  - url: https://site.getnet.com.br/como-organizar-recebimento-de-compras/
+  # Crediário
+  - url: https://site.getnet.com.br/crediario/
+  # Payment Link and online sales
+  - url: https://site.getnet.com.br/link-de-pagamento/
+  - url: https://site.getnet.com.br/link-de-pagamento-getnet/
+  - url: https://site.getnet.com.br/getcheckout/
+  # Help center, sales status and digital account (scenarios 5, 8)
+  - url: https://site.getnet.com.br/get-ajuda/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-gestao-de-vendas/entenda-o-que-e-venda-autorizada-aprovada-e-desfeita/
+    type: faq
+  - url: https://site.getnet.com.br/conta-digital/
+  - url: https://site.getnet.com.br/taxas-personalizadas/
+  # Public PDFs
+  - url: https://site.getnet.com.br/wp-content/uploads/2025/08/Contrato-de-oferta-de-maquina-em-comodato-com-pagamento-de-taxa-de-adesao.pdf
+    type: pdf
+
+sitemaps:
+  - url: https://site.getnet.com.br/post-sitemap.xml
+    include: [maquininha, pix, link-de-pagamento, antecip, recebimento, tap, crediario]
