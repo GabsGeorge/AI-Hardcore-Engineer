@@ -192,21 +192,18 @@ async def test_tool_outside_allowlist_is_denied(seeded: Pool, fake_llm: FakeLLM)
     assert result["confidence"] == 0.0
 
 
-async def test_knowledge_search_unavailable_is_reported_to_the_model(
-    seeded: Pool, fake_llm: FakeLLM, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import app.agents.support as support
-
-    monkeypatch.delitem(support.SUPPORT_TOOLS, "search_knowledge_base", raising=False)
+async def test_support_can_search_the_knowledge_base(seeded: Pool, fake_llm: FakeLLM) -> None:
+    # Block review finding 4: search_knowledge_base is on Support's allowlist and now wired
+    # (so the model does not waste a round calling a tool nobody runs). An empty KB returns [].
     fake_llm.script(
         support=[
             _calls(("search_knowledge_base", {"query": "maquininha sem internet"})),
-            _answer("ok"),
+            _answer("Nenhuma orientação disponível no momento.", 0.0),
         ]
     )
     [result] = (await support_node(_input("Maquininha sem internet"), CONFIG))["results"]
-    assert result["tools_used"] == []
-    assert "unavailable" in fake_llm.prompts("support")
+    assert [t["name"] for t in result["tools_used"]] == ["search_knowledge_base"]
+    assert result["tools_used"][0]["status"] in {"ok", "error"}
 
 
 async def test_loop_stops_after_four_rounds(seeded: Pool, fake_llm: FakeLLM) -> None:

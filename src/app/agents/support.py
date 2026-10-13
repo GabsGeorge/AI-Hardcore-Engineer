@@ -15,8 +15,13 @@ from app.agents.common import call_tool, make_result
 from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import SpecialistInput, ToolCallRecord
-from app.tools.interfaces import ALLOWLIST, openai_tool_specs
+from app.tools.interfaces import openai_tool_specs
+from app.tools.knowledge_tools import search_knowledge_base
 from app.tools.support_tools import SUPPORT_TOOLS, reference_date
+
+# search_knowledge_base is on the Support allowlist (contracts/tools.md) and wired here so the
+# model does not waste a round calling a tool that nobody runs (block review finding 4).
+_SUPPORT_TOOLS = {**SUPPORT_TOOLS, "search_knowledge_base": search_knowledge_base}
 
 MAX_ROUNDS = 4
 
@@ -35,10 +40,6 @@ def _confidence(records: list[ToolCallRecord]) -> float:
     return 1.0 if ok == len(records) else 0.5
 
 
-async def _unknown(args: Any, config: RunnableConfig) -> Any:
-    raise LookupError("tool not available to the Support agent")
-
-
 async def support_node(state: SpecialistInput, config: RunnableConfig) -> dict[str, Any]:
     subtask, language = state["subtask"], state["language"]
     lang = "en" if language.startswith("en") else "pt"
@@ -47,7 +48,8 @@ async def support_node(state: SpecialistInput, config: RunnableConfig) -> dict[s
         **config,
         "configurable": {**config.get("configurable", {}), "language": lang},
     }
-    model = get_model("support").bind_tools(openai_tool_specs("support"))
+    plain = get_model("support")
+    tooled = plain.bind_tools(openai_tool_specs("support"))
     messages: list[BaseMessage] = [
         SystemMessage(
             content=f"{load_prompt('support')}\nReference date (today): "
@@ -58,7 +60,9 @@ async def support_node(state: SpecialistInput, config: RunnableConfig) -> dict[s
     records: list[ToolCallRecord] = []
     tokens, answer = 0, ""
 
-    for _ in range(MAX_ROUNDS):
+    for round_index in range(MAX_ROUNDS):
+        # Last round: no tools, the model MUST answer with the data it already has.
+        model = plain if round_index == MAX_ROUNDS - 1 else tooled
         try:
             reply = await model.ainvoke(messages)
         except Exception:
@@ -70,18 +74,13 @@ async def support_node(state: SpecialistInput, config: RunnableConfig) -> dict[s
             break
         messages.append(reply)
         for call in reply.tool_calls:
-            name = call["name"]
-            impl = SUPPORT_TOOLS.get(name)
-            if impl is None and name in ALLOWLIST["support"]:
-                # search_knowledge_base belongs to the Knowledge block; not wired here.
-                content: Any = {"error": f"tool {name} is unavailable"}
-            else:
-                output, record = await call_tool(
-                    "support", name, impl or _unknown, call["args"], tool_config
-                )
-                records.append(record)
-                ok = record["status"] == "ok"
-                content = to_jsonable_python(output) if ok else {"error": record["status"]}
+            impl = _SUPPORT_TOOLS.get(call["name"])
+            output, record = await call_tool(
+                "support", call["name"], impl, call["args"], tool_config
+            )
+            records.append(record)
+            ok = record["status"] == "ok"
+            content = to_jsonable_python(output) if ok else {"error": record["status"]}
             messages.append(
                 ToolMessage(
                     content=json.dumps(content, ensure_ascii=False), tool_call_id=call["id"] or ""

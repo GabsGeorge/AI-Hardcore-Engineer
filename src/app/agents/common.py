@@ -29,13 +29,18 @@ async def _audit(config: RunnableConfig, action: str, tool: str, outcome: str) -
 
 
 async def call_tool(
-    agent: str, name: str, impl: ToolImpl, raw_args: dict[str, Any], config: RunnableConfig
+    agent: str, name: str, impl: ToolImpl | None, raw_args: dict[str, Any], config: RunnableConfig
 ) -> tuple[Any | None, ToolCallRecord]:
     """Runs a tool for an agent. Outside the allowlist → `denied` and audited, never executed
-    (REQ-ORC-05). Arguments are validated against the frozen interface before running."""
+    (REQ-ORC-05). An unknown name inside the allowlist is `error`, not `denied`: the agent is
+    allowed to call it, we just do not have an implementation. Arguments are validated against
+    the frozen interface before running."""
     if name not in ALLOWLIST.get(agent, set()):
         await _audit(config, "tool_denied", name, "denied")
         return None, {"name": name, "status": "denied", "latency_ms": 0}
+    if impl is None:
+        await _audit(config, "tool_call", name, "error")
+        return None, {"name": name, "status": "error", "latency_ms": 0}
     started = time.perf_counter()
     try:
         args = TOOL_INPUTS[name].model_validate(raw_args)
