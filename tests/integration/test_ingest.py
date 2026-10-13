@@ -2,9 +2,9 @@ import re
 from typing import Any
 
 import pytest
-from app.rag.crawler import Seed, SitemapSource, Sources
 
 from app.db.pool import Pool
+from app.rag.crawler import Seed, SitemapSource, Sources
 from app.rag.ingest import ingest_sources
 from tests.fakes import FakeLLM
 from tests.fixtures.site import BASE, FIXTURES, OUTSIDE, FakeSite
@@ -40,10 +40,18 @@ async def test_ingest_idempotent(db_pool: Pool, fake_llm: FakeLLM) -> None:
         "indexed": 3,
         "unchanged": 0,
         "chunks": len(chunk_ids),
+        "failed": 0,
     }
     assert first["chunks"] >= 3
     # Same content → zero reindexations, chunk ids untouched.
-    assert second == {"sources": 4, "pages": 3, "indexed": 0, "unchanged": 3, "chunks": 0}
+    assert second == {
+        "sources": 4,
+        "pages": 3,
+        "indexed": 0,
+        "unchanged": 3,
+        "chunks": 0,
+        "failed": 0,
+    }
     assert await _rows(db_pool, "SELECT id FROM chunks ORDER BY id") == chunk_ids
 
     docs = {
@@ -105,3 +113,18 @@ async def test_ingest_rejects_non_allowlisted_domain(db_pool: Pool, fake_llm: Fa
     assert f"{BASE}/privado/interno/" not in urls  # disallowed by robots.txt
     contents = " ".join(r["content"] for r in await _rows(db_pool, "SELECT content FROM chunks"))
     assert "taxa da Getnet é zero" not in contents
+
+
+@pytest.mark.req("REQ-RAG-02")
+async def test_embedding_failure_skips_the_page_without_partial_rows(
+    db_pool: Pool, fake_llm: FakeLLM, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Broken:
+        async def aembed_documents(self, texts: list[str]) -> list[list[float]]:
+            raise RuntimeError("embedding API down")
+
+    monkeypatch.setattr("app.rag.ingest.get_embeddings", Broken)
+    async with FakeSite().client() as client:
+        report = await ingest_sources(db_pool, SOURCES, client)
+    assert report["failed"] == 3 and report["indexed"] == 0 and report["chunks"] == 0
+    assert await _rows(db_pool, "SELECT id FROM documents") == []
