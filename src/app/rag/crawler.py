@@ -156,6 +156,7 @@ class Crawler:
         return self._robots[origin].can_fetch(USER_AGENT, url)
 
     async def _get(self, url: str) -> httpx.Response | None:
+        headers = {"User-Agent": USER_AGENT}
         for _ in range(MAX_REDIRECTS + 1):
             if not is_allowed(url, self.sources.allowed_domains):
                 get_logger().info("crawl_skipped", url=url, reason="not_allowlisted")
@@ -163,16 +164,29 @@ class Crawler:
             if not await self.allowed_by_robots(url):
                 get_logger().info("crawl_skipped", url=url, reason="robots_txt")
                 return None
-            resp = await self.client.get(
-                url, headers={"User-Agent": USER_AGENT}, follow_redirects=False
-            )
-            if resp.is_redirect:
-                url = urljoin(url, resp.headers.get("location", ""))
-                continue
-            if resp.status_code != 200 or len(resp.content) > MAX_BYTES:
-                get_logger().info("crawl_skipped", url=url, reason=f"http_{resp.status_code}")
-                return None
-            return resp
+            # Stream so a hostile or misconfigured host can't fill memory before the size check.
+            async with self.client.stream(
+                "GET", url, headers=headers, follow_redirects=False
+            ) as resp:
+                if resp.is_redirect:
+                    url = urljoin(url, resp.headers.get("location", ""))
+                    continue
+                if resp.status_code != 200:
+                    get_logger().info("crawl_skipped", url=url, reason=f"http_{resp.status_code}")
+                    return None
+                declared = int(resp.headers.get("content-length", 0) or 0)
+                if declared > MAX_BYTES:
+                    get_logger().info("crawl_skipped", url=url, reason="too_large")
+                    return None
+                buffer = bytearray()
+                async for chunk in resp.aiter_bytes():
+                    buffer.extend(chunk)
+                    if len(buffer) > MAX_BYTES:
+                        get_logger().info("crawl_skipped", url=url, reason="too_large")
+                        return None
+                # Reuse the response object; read() would re-fetch, so stash the bytes directly.
+                resp._content = bytes(buffer)
+                return resp
         return None
 
     async def fetch(self, url: str, seed: Seed | None = None) -> Page | None:

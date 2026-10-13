@@ -142,3 +142,22 @@ def test_configured_sources_are_allowlisted_and_cover_the_scenarios() -> None:
     seeds = " ".join(s.url for s in sources.seeds)
     for topic in ("maquininha", "pix", "antecipacao", "crediario", "link-de-pagamento", "ajuda"):
         assert topic in seeds, topic
+
+
+@pytest.mark.req("REQ-RAG-01")
+async def test_oversized_page_is_rejected_without_buffering_the_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Block review finding 3: the crawler streams the body and aborts past MAX_BYTES.
+    import app.rag.crawler as crawler_module
+    from tests.fixtures.site import BASE, FakeSite
+
+    monkeypatch.setattr(crawler_module, "MAX_BYTES", 1024)
+    site = FakeSite()
+    url = f"{BASE}/maquininhas/"
+    site.overrides[url] = b"x" * (10 * 1024)  # 10 KiB over a 1 KiB cap
+
+    seeds = Sources(allowed_domains=["site.getnet.com.br"], seeds=[Seed(url=url, lang="pt")])
+    async with site.client() as http:
+        pages = await Crawler(seeds, http).crawl()
+    assert pages == []
