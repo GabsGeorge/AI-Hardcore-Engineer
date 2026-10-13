@@ -66,13 +66,13 @@ Projeto único: `src/app/`, `tests/`, `prompts/`, `evals/`, `deploy/`, `scripts/
 **Purpose**: Repositório, dependências, higiene de segredos e ferramentas.
 **Responsável**: Backend · **Revisão**: Segurança (gitleaks, `.gitignore`)
 
-- [ ] T001 Criar a estrutura de pastas do plan.md com `__init__.py` em `src/app/{api,graph,agents,tools,guardrails,rag,db,ops,observability,core}/` e diretórios `prompts/`, `scripts/`, `tests/{unit,contract,integration,security,fixtures}/`, `evals/`, `deploy/{prometheus,grafana,k6}/`
-- [ ] T002 Criar `pyproject.toml` (Python 3.12, uv) com as dependências do plan.md, grupos `dev` (pytest, pytest-asyncio, pytest-cov, schemathesis, ruff, mypy) e `eval` (ragas), config de ruff e mypy strict em `src/`, marcador pytest `req`, e gerar `uv.lock` (REQ-SEC-05)
-- [ ] T003 [P] Criar `.gitignore` e `.dockerignore` cobrindo `.env`, `.venv/`, `__pycache__/`, `*.db`, `.pytest_cache/`, `.mypy_cache/`, `.ruff_cache/`, `.coverage*`, `htmlcov/`, `evals/reports/`, `models-cache/`, `pgdata/` (REQ-INF-05, REQ-SEC-04)
-- [ ] T004 [P] Criar `.env.example` sem valores para: `OPENAI_API_KEY`, `OPENAI_MODEL_PRIMARY`, `OPENAI_MODEL_FALLBACK`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`, `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `DATABASE_URL`, `REDIS_URL`, `MAX_STEPS=6`, `TOKEN_BUDGET_PER_RUN=20000`, `CONFIDENCE_REPLAN=0.70`, `CONFIDENCE_ESCALATE_HARD=0.40`, `RAG_RELEVANCE_THRESHOLD=0.30`, `RATE_LIMIT_PER_MIN=30`, `HANDOFF_SLA_MINUTES=15`, `HANDOFF_EXPIRY_HOURS=24`, `RETENTION_CONVERSATION_DAYS=90`, `RETENTION_LOG_DAYS=30`, `RETENTION_AUDIT_DAYS=365`, `EVAL_SAMPLE_RATE=0.10`, `OTEL_EXPORTER_OTLP_ENDPOINT=`, `SEED_REFERENCE_DATE=` (REQ-SEC-04)
-- [ ] T005 [P] Criar `.gitattributes` com `* text=auto eol=lf` (desenvolvimento em Windows, scripts em container Linux) (research R-21)
-- [ ] T006 [P] Criar `.pre-commit-config.yaml` (hook `gitleaks-docker`, ruff, ruff-format) e `.gitleaks.toml` com allowlist apenas para `.env.example`; instalar com `uvx pre-commit install` (REQ-SEC-04)
-- [ ] T007 [P] Criar `Makefile` como atalho opcional dos comandos `docker compose` (alvos `up`, `up-obs`, `down`, `logs`, `token`, `test`, `test-security`, `eval`, `load`, `lint`), com o comando equivalente em comentário em cada alvo (research R-21)
+- [X] T001 Criar a estrutura de pastas do plan.md com `__init__.py` em `src/app/{api,graph,agents,tools,guardrails,rag,db,ops,observability,core}/` e diretórios `prompts/`, `scripts/`, `tests/{unit,contract,integration,security,fixtures}/`, `evals/`, `deploy/{prometheus,grafana,k6}/`
+- [X] T002 Criar `pyproject.toml` (Python 3.12, uv) com as dependências do plan.md, grupos `dev` (pytest, pytest-asyncio, pytest-cov, schemathesis, ruff, mypy) e `eval` (ragas), config de ruff e mypy strict em `src/`, marcador pytest `req`, e gerar `uv.lock` (REQ-SEC-05)
+- [X] T003 [P] Criar `.gitignore` e `.dockerignore` cobrindo `.env`, `.venv/`, `__pycache__/`, `*.db`, `.pytest_cache/`, `.mypy_cache/`, `.ruff_cache/`, `.coverage*`, `htmlcov/`, `evals/reports/`, `models-cache/`, `pgdata/` (REQ-INF-05, REQ-SEC-04)
+- [X] T004 [P] Criar `.env.example` sem valores para: `OPENAI_API_KEY`, `OPENAI_MODEL_PRIMARY`, `OPENAI_MODEL_FALLBACK`, `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`, `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `DATABASE_URL`, `REDIS_URL`, `MAX_STEPS=6`, `TOKEN_BUDGET_PER_RUN=20000`, `CONFIDENCE_REPLAN=0.70`, `CONFIDENCE_ESCALATE_HARD=0.40`, `RAG_RELEVANCE_THRESHOLD=0.30`, `RATE_LIMIT_PER_MIN=30`, `HANDOFF_SLA_MINUTES=15`, `HANDOFF_EXPIRY_HOURS=24`, `RETENTION_CONVERSATION_DAYS=90`, `RETENTION_LOG_DAYS=30`, `RETENTION_AUDIT_DAYS=365`, `EVAL_SAMPLE_RATE=0.10`, `OTEL_EXPORTER_OTLP_ENDPOINT=`, `SEED_REFERENCE_DATE=` (REQ-SEC-04)
+- [X] T005 [P] Criar `.gitattributes` com `* text=auto eol=lf` (desenvolvimento em Windows, scripts em container Linux) (research R-21)
+- [X] T006 [P] Criar `.pre-commit-config.yaml` (hook `gitleaks-docker`, ruff, ruff-format) e `.gitleaks.toml` com allowlist apenas para `.env.example`; instalar com `uvx pre-commit install` (REQ-SEC-04)
+- [X] T007 [P] Criar `Makefile` como atalho opcional dos comandos `docker compose` (alvos `up`, `up-obs`, `down`, `logs`, `token`, `test`, `test-security`, `eval`, `load`, `lint`), com o comando equivalente em comentário em cada alvo (research R-21)
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
@@ -83,45 +83,45 @@ Projeto único: `src/app/`, `tests/`, `prompts/`, `evals/`, `deploy/`, `scripts/
 
 ### Testes primeiro (devem falhar)
 
-- [ ] T008 [P] Escrever `tests/test_repo_hygiene.py`: nenhum arquivo rastreado (`git ls-files`) casa com os padrões de artefato gerado; `.env` não rastreado; `.env.example` sem valores secretos (REQ-INF-05, REQ-SEC-04)
-- [ ] T009 [P] Escrever `tests/unit/test_config.py`: settings carregam do ambiente; `JWT_SECRET` com menos de 32 bytes falha no startup; defaults de limiares batem com `.env.example` (REQ-SEC-01, REQ-ORC-04)
-- [ ] T010 [P] Escrever `tests/unit/test_pii.py`: mascara CPF e CNPJ com dígito verificador válido, cartão só quando passa no Luhn, e-mail e telefone BR; não mascara números que falham na validação (REQ-GR-02)
-- [ ] T011 [P] Escrever `tests/unit/test_logging.py`: log JSON contém `trace_id` (32 hex), rota, latência e status; cartão e CPF aparecem mascarados (REQ-OBS-01, REQ-GR-02)
-- [ ] T012 [P] Escrever `tests/unit/test_migrations.py`: runner aplica `0001_init.sql` uma vez, é idempotente e as CHECKs de `data-model.md` rejeitam valores inválidos (`users.role` fora de `merchant|operator|admin`, `transactions.amount_cents <= 0`, `installments < 1`, `declined` sem `decline_code`, `feedback.rating` fora de `-1|1`) (REQ-ORC-06)
-- [ ] T013 [P] Escrever `tests/unit/test_auth.py` e `tests/security/test_api_auth.py`: sem token, token malformado, expirado, `aud`/`iss` errados ou `sub` inexistente → 401 sem executar agentes (REQ-SEC-01)
-- [ ] T014 [P] Escrever `tests/security/test_security_idor.py::test_divergent_user_id_403_no_tools`: token de A com `user_id = B` → 403 `forbidden_user_mismatch`, evento de auditoria e zero chamadas ao grafo (REQ-SEC-02)
-- [ ] T015 [P] Escrever `tests/contract/test_chat_validation.py`: mensagem vazia, só espaços, > 4.000 caracteres, campo extra ou `conversation_id` não-UUID → 422 com `Error` tipado e zero chamadas ao modelo (REQ-API-03)
-- [ ] T016 [P] Escrever `tests/integration/test_health.py`: `/healthz` 200; `/readyz` 503 com banco indisponível e 200 com tudo ok, no formato `Readiness` (REQ-API-04)
+- [X] T008 [P] Escrever `tests/test_repo_hygiene.py`: nenhum arquivo rastreado (`git ls-files`) casa com os padrões de artefato gerado; `.env` não rastreado; `.env.example` sem valores secretos (REQ-INF-05, REQ-SEC-04)
+- [X] T009 [P] Escrever `tests/unit/test_config.py`: settings carregam do ambiente; `JWT_SECRET` com menos de 32 bytes falha no startup; defaults de limiares batem com `.env.example` (REQ-SEC-01, REQ-ORC-04)
+- [X] T010 [P] Escrever `tests/unit/test_pii.py`: mascara CPF e CNPJ com dígito verificador válido, cartão só quando passa no Luhn, e-mail e telefone BR; não mascara números que falham na validação (REQ-GR-02)
+- [X] T011 [P] Escrever `tests/unit/test_logging.py`: log JSON contém `trace_id` (32 hex), rota, latência e status; cartão e CPF aparecem mascarados (REQ-OBS-01, REQ-GR-02)
+- [X] T012 [P] Escrever `tests/unit/test_migrations.py`: runner aplica `0001_init.sql` uma vez, é idempotente e as CHECKs de `data-model.md` rejeitam valores inválidos (`users.role` fora de `merchant|operator|admin`, `transactions.amount_cents <= 0`, `installments < 1`, `declined` sem `decline_code`, `feedback.rating` fora de `-1|1`) (REQ-ORC-06)
+- [X] T013 [P] Escrever `tests/unit/test_auth.py` e `tests/security/test_api_auth.py`: sem token, token malformado, expirado, `aud`/`iss` errados ou `sub` inexistente → 401 sem executar agentes (REQ-SEC-01)
+- [X] T014 [P] Escrever `tests/security/test_security_idor.py::test_divergent_user_id_403_no_tools`: token de A com `user_id = B` → 403 `forbidden_user_mismatch`, evento de auditoria e zero chamadas ao grafo (REQ-SEC-02)
+- [X] T015 [P] Escrever `tests/contract/test_chat_validation.py`: mensagem vazia, só espaços, > 4.000 caracteres, campo extra ou `conversation_id` não-UUID → 422 com `Error` tipado e zero chamadas ao modelo (REQ-API-03)
+- [X] T016 [P] Escrever `tests/integration/test_health.py`: `/healthz` 200; `/readyz` 503 com banco indisponível e 200 com tudo ok, no formato `Readiness` (REQ-API-04)
 
 ### Infra de teste
 
-- [ ] T017 [P] Criar `tests/fakes.py`: `FakeChatModel` roteirizado por papel (`ainvoke`, `with_structured_output`, `bind_tools`, `usage_metadata`), captura de prompts enviados, `DeterministicFakeEmbeddings` (1536 dims) e `FakeReranker` (ADR 0006)
-- [ ] T018 Criar `tests/conftest.py`: app com `get_model`/embeddings/reranker substituídos pelos fakes, fábrica de tokens por usuário e papel, banco migrado e limpo por teste, Redis limpo, `SEED_REFERENCE_DATE` fixo
+- [X] T017 [P] Criar `tests/fakes.py`: `FakeChatModel` roteirizado por papel (`ainvoke`, `with_structured_output`, `bind_tools`, `usage_metadata`), captura de prompts enviados, `DeterministicFakeEmbeddings` (1536 dims) e `FakeReranker` (ADR 0006)
+- [X] T018 Criar `tests/conftest.py`: app com `get_model`/embeddings/reranker substituídos pelos fakes, fábrica de tokens por usuário e papel, banco migrado e limpo por teste, Redis limpo, `SEED_REFERENCE_DATE` fixo
 
 ### Implementação
 
-- [ ] T019 Implementar `src/app/core/config.py` com pydantic-settings para todas as variáveis do `.env.example`, validando `JWT_SECRET` ≥ 32 bytes (REQ-SEC-01, REQ-SEC-04)
-- [ ] T020 [P] Implementar `src/app/core/errors.py`: erros tipados com códigos `unauthorized`, `forbidden_user_mismatch`, `forbidden_role`, `not_found`, `idempotency_conflict`, `ticket_closed`, `validation_error`, `rate_limited` → corpo `Error {error:{code,message,details}, trace_id}` (REQ-API-03)
-- [ ] T021 [P] Implementar `src/app/core/llm.py`: `get_model(role)` (ChatOpenAI primário, timeout 20 s), `get_embeddings()` e ponto de override para testes (research R-01)
-- [ ] T022 [P] Implementar `src/app/guardrails/pii.py`: regex + Luhn + dígitos verificadores de CPF/CNPJ, função `mask(text) -> (masked, found_types)` (REQ-GR-02)
-- [ ] T023 Implementar `src/app/db/pool.py` (pool psycopg async compartilhável) e `src/app/db/migrate.py` (runner com tabela `schema_migrations`) (research R-12)
-- [ ] T024 Escrever `src/app/db/migrations/0001_init.sql` com todas as tabelas de `data-model.md`: `users.role` CHECK `merchant|operator|admin`; `conversations.handoff_status` CHECK `none|awaiting_human|resolved|expired`; `transactions.status` `approved|declined` com `decline_code` obrigatório se `declined`, `amount_cents > 0`, `installments >= 1`; `chunks.embedding vector(1536)` com HNSW `vector_cosine_ops` (sem coluna `tsvector`: o BM25 é em memória, ADR 0003); `handoffs` (`reason`, `status awaiting_human|resolved|expired`, `priority normal|high`, `sla_due_at`, `expires_at`, `pending_action jsonb`); `audit_events`; `feedback` (`rating -1|1`, `comment` ≤ 1.000) e índices citados (REQ-ORC-06, REQ-RAG-02)
-- [ ] T025 [P] Implementar `src/app/observability/logging.py`: structlog JSON com `trace_id`, processador de máscara via `guardrails/pii.py` (REQ-OBS-01, REQ-GR-02)
-- [ ] T026 [P] Implementar `src/app/observability/tracing.py`: setup OTel, `trace_id` W3C por requisição, exporter OTLP só se `OTEL_EXPORTER_OTLP_ENDPOINT` estiver definido (REQ-OBS-01)
-- [ ] T027 Implementar `src/app/api/auth.py` (PyJWT HS256, valida `exp`/`iss`/`aud`, usuário existe, dependência `current_user` com papel) e `scripts/issue_token.py` (só ambiente local) (REQ-SEC-01, ADR 0005)
-- [ ] T028 Implementar `src/app/api/schemas.py` espelhando `contracts/openapi.yaml`: `ChatRequest` (`additionalProperties: false`, `message` 1..4000 e não só espaços, `user_id` ≤ 64, `conversation_id` UUID), `ChatResponse`, `Conversation`, `Handoff`, `HandoffReply`, `FeedbackRequest`, `Readiness`, `Error` (REQ-API-02, REQ-API-03)
-- [ ] T029 Implementar `src/app/db/repo.py` (primeiras funções): `insert_audit_event` sem PII, `get_user`, `get_or_create_conversation` filtrando por dono (REQ-SEC-02, REQ-SEC-07)
-- [ ] T030 Implementar `src/app/api/chat.py` (`POST /v1/chat`): auth → divergência de `user_id` = 403 + auditoria antes de qualquer agente → validação → conversa do dono (404 se alheia) → `graph.ainvoke` com `thread_id = "{user_id}:{conversation_id}"` e `user_id` em `configurable` (REQ-API-01, REQ-SEC-02, ADR 0005)
-- [ ] T031 [P] Implementar `src/app/api/health.py` (`/healthz`, `/readyz` checando banco, índice, Redis e circuito do LLM) (REQ-API-04)
-- [ ] T032 Implementar `src/app/main.py`: app FastAPI, lifespan (pool, migrações, grafo, Redis), handlers de erro tipado, middleware de `trace_id` (REQ-OBS-01)
-- [ ] T033 [P] Criar `Dockerfile` multi-stage com uv e lockfile, imagem final sem toolchain, `USER app` não root, `HEALTHCHECK` em `/healthz` (REQ-INF-02, REQ-SEC-05)
-- [ ] T034 Criar `src/app/rag/ingest.py` como stub com `main()` que aplica migrações e seed e registra "nenhuma fonte ingerida", com o marcador `# STUB(T079)` (o corpo da ingestão é da US1, sem tocar no compose) (REQ-INF-01)
-- [ ] T035 Criar `docker-compose.yml` (api, `pgvector/pgvector:pg16`, `redis:7`, job `ingest` executando `python -m app.rag.ingest`, api com `depends_on: ingest: condition: service_completed_successfully`, volumes `pgdata` e `models-cache`) e `docker-compose.test.yml` (serviços `tests` — pytest com cobertura — e `lint` — ruff + mypy — numa rede `internal: true`) (REQ-INF-01, REQ-INF-03)
+- [X] T019 Implementar `src/app/core/config.py` com pydantic-settings para todas as variáveis do `.env.example`, validando `JWT_SECRET` ≥ 32 bytes (REQ-SEC-01, REQ-SEC-04)
+- [X] T020 [P] Implementar `src/app/core/errors.py`: erros tipados com códigos `unauthorized`, `forbidden_user_mismatch`, `forbidden_role`, `not_found`, `idempotency_conflict`, `ticket_closed`, `validation_error`, `rate_limited` → corpo `Error {error:{code,message,details}, trace_id}` (REQ-API-03)
+- [X] T021 [P] Implementar `src/app/core/llm.py`: `get_model(role)` (ChatOpenAI primário, timeout 20 s), `get_embeddings()` e ponto de override para testes (research R-01)
+- [X] T022 [P] Implementar `src/app/guardrails/pii.py`: regex + Luhn + dígitos verificadores de CPF/CNPJ, função `mask(text) -> (masked, found_types)` (REQ-GR-02)
+- [X] T023 Implementar `src/app/db/pool.py` (pool psycopg async compartilhável) e `src/app/db/migrate.py` (runner com tabela `schema_migrations`) (research R-12)
+- [X] T024 Escrever `src/app/db/migrations/0001_init.sql` com todas as tabelas de `data-model.md`: `users.role` CHECK `merchant|operator|admin`; `conversations.handoff_status` CHECK `none|awaiting_human|resolved|expired`; `transactions.status` `approved|declined` com `decline_code` obrigatório se `declined`, `amount_cents > 0`, `installments >= 1`; `chunks.embedding vector(1536)` com HNSW `vector_cosine_ops` (sem coluna `tsvector`: o BM25 é em memória, ADR 0003); `handoffs` (`reason`, `status awaiting_human|resolved|expired`, `priority normal|high`, `sla_due_at`, `expires_at`, `pending_action jsonb`); `audit_events`; `feedback` (`rating -1|1`, `comment` ≤ 1.000) e índices citados (REQ-ORC-06, REQ-RAG-02)
+- [X] T025 [P] Implementar `src/app/observability/logging.py`: structlog JSON com `trace_id`, processador de máscara via `guardrails/pii.py` (REQ-OBS-01, REQ-GR-02)
+- [X] T026 [P] Implementar `src/app/observability/tracing.py`: setup OTel, `trace_id` W3C por requisição, exporter OTLP só se `OTEL_EXPORTER_OTLP_ENDPOINT` estiver definido (REQ-OBS-01)
+- [X] T027 Implementar `src/app/api/auth.py` (PyJWT HS256, valida `exp`/`iss`/`aud`, usuário existe, dependência `current_user` com papel) e `scripts/issue_token.py` (só ambiente local) (REQ-SEC-01, ADR 0005)
+- [X] T028 Implementar `src/app/api/schemas.py` espelhando `contracts/openapi.yaml`: `ChatRequest` (`additionalProperties: false`, `message` 1..4000 e não só espaços, `user_id` ≤ 64, `conversation_id` UUID), `ChatResponse`, `Conversation`, `Handoff`, `HandoffReply`, `FeedbackRequest`, `Readiness`, `Error` (REQ-API-02, REQ-API-03)
+- [X] T029 Implementar `src/app/db/repo.py` (primeiras funções): `insert_audit_event` sem PII, `get_user`, `get_or_create_conversation` filtrando por dono (REQ-SEC-02, REQ-SEC-07)
+- [X] T030 Implementar `src/app/api/chat.py` (`POST /v1/chat`): auth → divergência de `user_id` = 403 + auditoria antes de qualquer agente → validação → conversa do dono (404 se alheia) → `graph.ainvoke` com `thread_id = "{user_id}:{conversation_id}"` e `user_id` em `configurable` (REQ-API-01, REQ-SEC-02, ADR 0005)
+- [X] T031 [P] Implementar `src/app/api/health.py` (`/healthz`, `/readyz` checando banco, índice, Redis e circuito do LLM) (REQ-API-04)
+- [X] T032 Implementar `src/app/main.py`: app FastAPI, lifespan (pool, migrações, grafo, Redis), handlers de erro tipado, middleware de `trace_id` (REQ-OBS-01)
+- [X] T033 [P] Criar `Dockerfile` multi-stage com uv e lockfile, imagem final sem toolchain, `USER app` não root, `HEALTHCHECK` em `/healthz` (REQ-INF-02, REQ-SEC-05)
+- [X] T034 Criar `src/app/rag/ingest.py` como stub com `main()` que aplica migrações e seed e registra "nenhuma fonte ingerida", com o marcador `# STUB(T079)` (o corpo da ingestão é da US1, sem tocar no compose) (REQ-INF-01)
+- [X] T035 Criar `docker-compose.yml` (api, `pgvector/pgvector:pg16`, `redis:7`, job `ingest` executando `python -m app.rag.ingest`, api com `depends_on: ingest: condition: service_completed_successfully`, volumes `pgdata` e `models-cache`) e `docker-compose.test.yml` (serviços `tests` — pytest com cobertura — e `lint` — ruff + mypy — numa rede `internal: true`) (REQ-INF-01, REQ-INF-03)
 
 ### Higiene e commit inicial
 
-- [ ] T036 Verificar antes do primeiro commit: `uvx pre-commit run --all-files` verde (gitleaks-docker, ruff); `git check-ignore .env` confirma o ignore; `git status --porcelain` não lista `.env`, bancos, índices, caches nem `models-cache/`; `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests` e `... run --rm lint` verdes (REQ-SEC-04, REQ-INF-05)
-- [ ] T037 Fazer o commit inicial `chore(T037): fundação do repositório [REQ-SEC-04, REQ-INF-05]` e criar a branch `001-multi-agent-support` a partir dele
+- [X] T036 Verificar antes do primeiro commit: `uvx pre-commit run --all-files` verde (gitleaks-docker, ruff); `git check-ignore .env` confirma o ignore; `git status --porcelain` não lista `.env`, bancos, índices, caches nem `models-cache/`; `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests` e `... run --rm lint` verdes (REQ-SEC-04, REQ-INF-05)
+- [X] T037 Fazer o commit inicial `chore(T037): fundação do repositório [REQ-SEC-04, REQ-INF-05]` e criar a branch `001-multi-agent-support` a partir dele
 
 **Checkpoint**: `docker compose up` sobe a API; `/healthz` 200; 401/403/422 funcionando; suíte da fundação verde via `docker compose`; commit inicial feito na branch `001-multi-agent-support`.
 
@@ -138,31 +138,31 @@ Ao final, os contratos ficam **congelados**.
 
 ### Testes primeiro (devem falhar)
 
-- [ ] T038 [P] Escrever `tests/unit/test_tool_interfaces.py`: as 9 tools de `contracts/tools.md` têm modelos de entrada/saída em `src/app/tools/interfaces.py` com os limites de lá (`query` 1..500, `days` 1..30, `limit` 1..50, `code` 1..4, intervalo ≤ 90 dias); nenhum modelo de entrada tem campo de identidade; as allowlists batem com `tools.md` (REQ-SEC-03, REQ-ORC-05)
-- [ ] T039 [P] Escrever `tests/integration/test_graph_topology.py`: todos os nós (`input_guardrail`, `summarize`, `supervisor`, `knowledge`, `support`, `escalation`, `synthesize`, `degraded_response`, `safe_response`, `output_guardrail`) estão registrados e `input_guardrail` precede todo nó com LLM (REQ-ORC-01, REQ-GR-02)
-- [ ] T040 [P] Escrever `tests/integration/test_graph_state.py`: `AgentState` serializa, é salvo pelo `AsyncPostgresSaver` e recarregado íntegro após recriar o grafo (simula reinício) (REQ-ORC-06)
-- [ ] T041 [P] Escrever `tests/unit/test_supervisor_plan.py`: o Supervisor produz `Plan` válido (`route`, `subtasks`, `confidence`, `rationale`, `language`, `sensitive`); plano inválido do modelo → `degraded_response`, nunca execução (REQ-ORC-01)
-- [ ] T042 [P] Escrever `tests/integration/test_graph_budget.py::test_max_steps_degrades_gracefully` e `::test_token_budget`: fluxo que não converge termina no 6º passo; soma de tokens > 20.000 → `degraded_response` ou handoff, sem loop (REQ-ORC-04)
-- [ ] T043 [P] Escrever `tests/security/test_allowlist.py::test_knowledge_cannot_call_support_tools`: chamada fora da allowlist retorna `denied`, gera auditoria e não executa (REQ-ORC-05)
-- [ ] T044 [P] Escrever `tests/integration/test_language.py`: perguntas em PT e EN recebem resposta no idioma da pergunta (REQ-ORC-07)
+- [X] T038 [P] Escrever `tests/unit/test_tool_interfaces.py`: as 9 tools de `contracts/tools.md` têm modelos de entrada/saída em `src/app/tools/interfaces.py` com os limites de lá (`query` 1..500, `days` 1..30, `limit` 1..50, `code` 1..4, intervalo ≤ 90 dias); nenhum modelo de entrada tem campo de identidade; as allowlists batem com `tools.md` (REQ-SEC-03, REQ-ORC-05)
+- [X] T039 [P] Escrever `tests/integration/test_graph_topology.py`: todos os nós (`input_guardrail`, `summarize`, `supervisor`, `knowledge`, `support`, `escalation`, `synthesize`, `degraded_response`, `safe_response`, `output_guardrail`) estão registrados e `input_guardrail` precede todo nó com LLM (REQ-ORC-01, REQ-GR-02)
+- [X] T040 [P] Escrever `tests/integration/test_graph_state.py`: `AgentState` serializa, é salvo pelo `AsyncPostgresSaver` e recarregado íntegro após recriar o grafo (simula reinício) (REQ-ORC-06)
+- [X] T041 [P] Escrever `tests/unit/test_supervisor_plan.py`: o Supervisor produz `Plan` válido (`route`, `subtasks`, `confidence`, `rationale`, `language`, `sensitive`); plano inválido do modelo → `degraded_response`, nunca execução (REQ-ORC-01)
+- [X] T042 [P] Escrever `tests/integration/test_graph_budget.py::test_max_steps_degrades_gracefully` e `::test_token_budget`: fluxo que não converge termina no 6º passo; soma de tokens > 20.000 → `degraded_response` ou handoff, sem loop (REQ-ORC-04)
+- [X] T043 [P] Escrever `tests/security/test_allowlist.py::test_knowledge_cannot_call_support_tools`: chamada fora da allowlist retorna `denied`, gera auditoria e não executa (REQ-ORC-05)
+- [X] T044 [P] Escrever `tests/integration/test_language.py`: perguntas em PT e EN recebem resposta no idioma da pergunta (REQ-ORC-07)
 
 ### Implementação
 
-- [ ] T045 Implementar `src/app/graph/state.py`: `AgentState`, `Plan`, `SubTask`, `AgentResult`, `Source`, `ToolCall`, `Escalation` conforme `data-model.md` §3, sem `user_id` (REQ-ORC-06, REQ-SEC-03)
-- [ ] T046 Implementar `src/app/tools/interfaces.py` (**congelado**): modelos Pydantic de entrada e saída das 9 tools de [contracts/tools.md](./contracts/tools.md), sem campo de identidade, e o mapa `ALLOWLIST` por agente (Knowledge: `search_knowledge_base`, `web_search`; Support: as 5 tools + `search_knowledge_base`; Escalation: `create_ticket`, `request_action_approval`; Supervisor: nenhuma) (REQ-SEC-03, REQ-ORC-05)
-- [ ] T047 [P] Escrever `prompts/supervisor.md` e `prompts/synthesize.md` (saída estruturada, idioma do usuário, sem segredos)
-- [ ] T048 Implementar `src/app/agents/common.py`: execução de agente com a `ALLOWLIST` de `tools/interfaces.py`, status `denied` + auditoria, montagem de `AgentResult` (REQ-ORC-05)
-- [ ] T049 [P] Criar stubs `src/app/agents/knowledge.py`, `src/app/agents/support.py` e `src/app/agents/escalation.py`: cada um exporta a função de nó com a assinatura final e devolve `AgentResult` com `confidence = 0` e `error = "not_implemented"`, com os marcadores `# STUB(T083)` (knowledge), `# STUB(T066)` (support) e `# STUB(T108)` (escalation)
-- [ ] T050 [P] Criar os nós iniciais: `src/app/guardrails/input.py` **já aplicando a máscara de PII da Fase 0** (`guardrails/pii.py`) antes de qualquer nó com LLM — nunca passagem pura — e gravando `guardrail_flags` `masked`/`pass`, marcador `# STUB(T119)`; `src/app/guardrails/output.py` (passagem, `pass`), marcador `# STUB(T120)`; `src/app/graph/memory.py` (nó `summarize` em passagem), marcador `# STUB(T125)`; o planejador já monta o contexto com `summary` + mensagens recentes (REQ-GR-02)
-- [ ] T051 Implementar `src/app/graph/supervisor.py`: planejador LLM com `with_structured_output(Plan)` + política determinística (limiares de config, `step`, `tokens_used`) retornando `Command(goto=...)` (REQ-ORC-01, REQ-ORC-04, research R-08)
-- [ ] T052 [P] Implementar `src/app/graph/synthesize.py`: `synthesize` (idioma do plano), `degraded_response` e `safe_response` (REQ-ORC-04, REQ-ORC-07)
-- [ ] T053 Implementar `src/app/graph/builder.py`: `StateGraph` registrando **todos** os nós de uma vez — `input_guardrail` e `output_guardrail` (de `guardrails/input.py` e `output.py`), `summarize` (de `graph/memory.py`), `supervisor`, `knowledge`, `support`, `escalation` (stubs), `synthesize`, `degraded_response`, `safe_response` —, `AsyncPostgresSaver` e limite de recursão; nenhuma user story edita este registro (REQ-ORC-06, REQ-GR-02)
-- [ ] T054 Garantir em `src/app/api/chat.py` que `guardrails.input/output` da resposta vêm de `guardrail_flags` do estado, para que as US6 não precisem editar a API (REQ-API-02)
+- [X] T045 Implementar `src/app/graph/state.py`: `AgentState`, `Plan`, `SubTask`, `AgentResult`, `Source`, `ToolCall`, `Escalation` conforme `data-model.md` §3, sem `user_id` (REQ-ORC-06, REQ-SEC-03)
+- [X] T046 Implementar `src/app/tools/interfaces.py` (**congelado**): modelos Pydantic de entrada e saída das 9 tools de [contracts/tools.md](./contracts/tools.md), sem campo de identidade, e o mapa `ALLOWLIST` por agente (Knowledge: `search_knowledge_base`, `web_search`; Support: as 5 tools + `search_knowledge_base`; Escalation: `create_ticket`, `request_action_approval`; Supervisor: nenhuma) (REQ-SEC-03, REQ-ORC-05)
+- [X] T047 [P] Escrever `prompts/supervisor.md` e `prompts/synthesize.md` (saída estruturada, idioma do usuário, sem segredos)
+- [X] T048 Implementar `src/app/agents/common.py`: execução de agente com a `ALLOWLIST` de `tools/interfaces.py`, status `denied` + auditoria, montagem de `AgentResult` (REQ-ORC-05)
+- [X] T049 [P] Criar stubs `src/app/agents/knowledge.py`, `src/app/agents/support.py` e `src/app/agents/escalation.py`: cada um exporta a função de nó com a assinatura final e devolve `AgentResult` com `confidence = 0` e `error = "not_implemented"`, com os marcadores `# STUB(T083)` (knowledge), `# STUB(T066)` (support) e `# STUB(T108)` (escalation)
+- [X] T050 [P] Criar os nós iniciais: `src/app/guardrails/input.py` **já aplicando a máscara de PII da Fase 0** (`guardrails/pii.py`) antes de qualquer nó com LLM — nunca passagem pura — e gravando `guardrail_flags` `masked`/`pass`, marcador `# STUB(T119)`; `src/app/guardrails/output.py` (passagem, `pass`), marcador `# STUB(T120)`; `src/app/graph/memory.py` (nó `summarize` em passagem), marcador `# STUB(T125)`; o planejador já monta o contexto com `summary` + mensagens recentes (REQ-GR-02)
+- [X] T051 Implementar `src/app/graph/supervisor.py`: planejador LLM com `with_structured_output(Plan)` + política determinística (limiares de config, `step`, `tokens_used`) retornando `Command(goto=...)` (REQ-ORC-01, REQ-ORC-04, research R-08)
+- [X] T052 [P] Implementar `src/app/graph/synthesize.py`: `synthesize` (idioma do plano), `degraded_response` e `safe_response` (REQ-ORC-04, REQ-ORC-07)
+- [X] T053 Implementar `src/app/graph/builder.py`: `StateGraph` registrando **todos** os nós de uma vez — `input_guardrail` e `output_guardrail` (de `guardrails/input.py` e `output.py`), `summarize` (de `graph/memory.py`), `supervisor`, `knowledge`, `support`, `escalation` (stubs), `synthesize`, `degraded_response`, `safe_response` —, `AsyncPostgresSaver` e limite de recursão; nenhuma user story edita este registro (REQ-ORC-06, REQ-GR-02)
+- [X] T054 Garantir em `src/app/api/chat.py` que `guardrails.input/output` da resposta vêm de `guardrail_flags` do estado, para que as US6 não precisem editar a API (REQ-API-02)
 
 ### Fechamento do bloco (Fase 0 + grafo base)
 
-- [ ] T055 Rodar a suíte completa e o lint via `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests` e `... run --rm lint`; commitar por task no formato `feat(T049): descrição [REQ-...]`
-- [ ] T056 Acionar o revisor somente leitura no diff do bloco com [checklists/block-review.md](./checklists/block-review.md) (segurança + orquestração); corrigir achados bloqueantes e repetir até liberar
+- [X] T055 Rodar a suíte completa e o lint via `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests` e `... run --rm lint`; commitar por task no formato `feat(T049): descrição [REQ-...]`
+- [X] T056 Acionar o revisor somente leitura no diff do bloco com [checklists/block-review.md](./checklists/block-review.md) (segurança + orquestração); corrigir achados bloqueantes e repetir até liberar
 - [ ] T057 Criar as worktrees `../wt-us1`, `../wt-us2` e `../wt-us3` (branches `001-us1`, `001-us2`, `001-us3` a partir de `001-multi-agent-support`) e copiar `.specify/feature.json` para cada uma
 
 **Checkpoint**: grafo executa com fakes e persiste estado; especialistas são stubs; contratos congelados; revisor liberou o bloco.
@@ -313,7 +313,7 @@ Ao final, os contratos ficam **congelados**.
 
 - [ ] T118 [P] [US6] Escrever `prompts/input_guard.md` (classes `safe|injection|out_of_scope|sensitive|human_request`) e `prompts/grounding.md`
 - [ ] T119 [US6] Completar o nó `src/app/guardrails/input.py` (sem editar `builder.py`): máscara de PII → heurísticas → classificador LLM; bloqueio → `safe_response`; `sensitive`/`human_request` sinalizados ao Supervisor (REQ-GR-01, REQ-GR-03)
-- [ ] T120 [US6] Completar o nó `src/app/guardrails/output.py` (sem editar `builder.py`): re-máscara de PII, padrões de promessa financeira, grounding por LLM para respostas do Knowledge (REQ-GR-04)
+- [ ] T120 [US6] Completar o nó `src/app/guardrails/output.py` (sem editar `builder.py`): re-máscara de PII, padrões de promessa financeira, grounding por LLM para respostas do Knowledge; a re-máscara deve acontecer antes de a resposta ser gravada no checkpoint (substituir a mensagem pelo mesmo `id` ou mascarar em `synthesize`) e ser verificada nos blobs como em `test_chat_flow.py` — achado 4 da revisão do bloco base (REQ-GR-04)
 - [ ] T121 [US6] Garantir que `src/app/guardrails/input.py` e `output.py` gravam em `guardrail_flags` os valores do contrato (`pass|masked|blocked` e `pass|rewritten|blocked`), que a API já expõe em `guardrails` (REQ-GR-01, REQ-GR-04, REQ-GR-05)
 
 ## Phase 10: User Story 7 - Conversa com memória (Priority: P1)
