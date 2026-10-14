@@ -5,11 +5,12 @@ state, so raw PII is never persisted in checkpoints (constitution X)."""
 from typing import Any, get_args
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from langchain_core.messages import HumanMessage
 from langgraph.types import Overwrite
 
 from app.api.auth import CurrentUser, current_user
+from app.api.limits import check_rate_limit, idempotency_get_or_claim, idempotency_store
 from app.api.schemas import ChatRequest, ChatResponse, GuardrailsResult, HandoffRef, RouteNode
 from app.core.errors import AppError, forbidden
 from app.db import repo
@@ -89,7 +90,10 @@ def build_response(state: dict[str, Any], conversation_id: UUID, trace_id: str) 
 
 @router.post("/v1/chat", response_model=ChatResponse)
 async def chat(
-    body: ChatRequest, request: Request, user: CurrentUser = Depends(current_user)
+    body: ChatRequest,
+    request: Request,
+    user: CurrentUser = Depends(current_user),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> ChatResponse:
     trace_id: str = request.state.trace_id
     pool = get_pool()
@@ -104,6 +108,12 @@ async def chat(
             trace_id=trace_id,
         )
         raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
+
+    await check_rate_limit(request, user.id)
+    body_dict = body.model_dump(mode="json", exclude_none=True)
+    cached = await idempotency_get_or_claim(request, user.id, idempotency_key, body_dict)
+    if cached is not None:
+        return ChatResponse.model_validate(cached)
 
     graph = request.app.state.graph
     if graph is None:
@@ -124,4 +134,8 @@ async def chat(
                 "summary": row["summary"],
                 "pending_action": row.get("pending_action"),
             }
-    return build_response(state, conversation_id, trace_id)
+    response = build_response(state, conversation_id, trace_id)
+    await idempotency_store(
+        request, user.id, idempotency_key, body_dict, response.model_dump(mode="json")
+    )
+    return response

@@ -64,10 +64,15 @@ async def test_direct_injection_blocked(
 async def test_block_rate_at_least_95_percent(
     client: httpx.AsyncClient,
     fake_llm: FakeLLM,
+    app: Any,
     auth_headers: dict[str, dict[str, str]],
 ) -> None:
     blocked = 0
     for attack in ATTACKS:
+        # Taxa de bloqueio é uma métrica de segurança; o rate limit (REQ-SEC-08) é testado
+        # em test_rate_limit.py. Aqui zeramos o contador por iteração para que a janela fixa
+        # não produza um falso 429 no meio da varredura.
+        await app.state.redis.flushdb()
         _script_injection(fake_llm)
         resp = await client.post(
             "/v1/chat",
