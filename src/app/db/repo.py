@@ -90,3 +90,114 @@ async def get_conversation_handoff(
             (conversation_id, user_id),
         )
         return await cur.fetchone()
+
+
+# --- Handoffs ---------------------------------------------------------------------------------
+async def create_handoff(
+    pool: Pool,
+    *,
+    ticket_id: UUID,
+    conversation_id: UUID,
+    user_id: str,
+    reason: str,
+    summary: str,
+    context: dict[str, Any] | None,
+    pending_action: dict[str, Any] | None,
+    sla_minutes: int,
+    expiry_hours: int,
+) -> dict[str, Any]:
+    """Opens a ticket and marks the conversation as awaiting the human (REQ-HITL-02)."""
+    async with pool.connection() as conn, conn.transaction():
+        cur = await conn.execute(
+            "INSERT INTO handoffs (id, conversation_id, user_id, reason, summary, context,"
+            " pending_action, sla_due_at, expires_at) VALUES (%s, %s, %s, %s, %s, %s, %s,"
+            " now() + make_interval(mins => %s), now() + make_interval(hours => %s))"
+            " RETURNING id, sla_due_at, expires_at",
+            (
+                ticket_id,
+                conversation_id,
+                user_id,
+                reason,
+                _scrub(summary),
+                Jsonb(_scrub(context or {})),
+                Jsonb(_scrub(pending_action)) if pending_action else None,
+                sla_minutes,
+                expiry_hours,
+            ),
+        )
+        row = await cur.fetchone()
+        await conn.execute(
+            "UPDATE conversations SET handoff_status = 'awaiting_human' WHERE id = %s",
+            (conversation_id,),
+        )
+        if row is None:
+            raise RuntimeError("handoff insert returned no row")
+        return row
+
+
+async def list_handoffs(
+    pool: Pool, status: str | None = None, limit: int = 50
+) -> list[dict[str, Any]]:
+    """Operator queue, ordered by priority then creation time (REQ-HITL-06)."""
+    async with pool.connection() as conn:
+        if status:
+            cur = await conn.execute(
+                "SELECT * FROM handoffs WHERE status = %s"
+                " ORDER BY (priority = 'high') DESC, created_at LIMIT %s",
+                (status, limit),
+            )
+        else:
+            cur = await conn.execute(
+                "SELECT * FROM handoffs ORDER BY (priority = 'high') DESC, created_at LIMIT %s",
+                (limit,),
+            )
+        return list(await cur.fetchall())
+
+
+async def get_handoff(pool: Pool, ticket_id: UUID) -> dict[str, Any] | None:
+    async with pool.connection() as conn:
+        cur = await conn.execute("SELECT * FROM handoffs WHERE id = %s", (ticket_id,))
+        return await cur.fetchone()
+
+
+async def resolve_handoff(
+    pool: Pool,
+    *,
+    ticket_id: UUID,
+    operator_id: str,
+    reply: str,
+    action_decision: str | None,
+) -> dict[str, Any]:
+    """awaiting_human → resolved. Returns the row BEFORE marking resolved, so the caller can
+    inspect pending_action; raises not_found when the ticket is already closed (409 upstream)."""
+    async with pool.connection() as conn, conn.transaction():
+        cur = await conn.execute(
+            "UPDATE handoffs SET status = 'resolved', operator_id = %s, operator_reply = %s,"
+            " pending_action = CASE WHEN pending_action IS NULL THEN NULL ELSE"
+            " jsonb_set(pending_action, '{decision}',"
+            " to_jsonb(COALESCE(%s::text, pending_action->>'decision'))) END,"
+            " resolved_at = now()"
+            " WHERE id = %s AND status = 'awaiting_human'"
+            " RETURNING id, conversation_id, user_id, pending_action, operator_reply",
+            (operator_id, _scrub(reply), action_decision, ticket_id),
+        )
+        row = await cur.fetchone()
+        if row is None:
+            raise not_found()
+        await conn.execute(
+            "UPDATE conversations SET handoff_status = 'resolved' WHERE id = %s",
+            (row["conversation_id"],),
+        )
+        return row
+
+
+async def get_latest_handoff_for_conversation(
+    pool: Pool, user_id: str, conversation_id: UUID
+) -> dict[str, Any] | None:
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            "SELECT * FROM handoffs WHERE conversation_id = %s AND user_id = %s"
+            " ORDER BY created_at DESC LIMIT 1",
+            (conversation_id, user_id),
+        )
+        return await cur.fetchone()
