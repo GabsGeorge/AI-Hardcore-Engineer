@@ -47,5 +47,5 @@ async def summarize(state: AgentState) -> dict[str, Any]:
     # Drop the old messages: the planner now relies on `summary` + the recent ones.
     return {
         "summary": summary,
-        "messages": [RemoveMessage(id=m.id) for m in old if getattr(m, "id", None)],
+        "messages": [RemoveMessage(id=mid) for m in old if (mid := getattr(m, "id", None))],
     }
