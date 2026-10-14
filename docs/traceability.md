@@ -9,7 +9,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-API-03 | T015, T020, T028 | tests/contract/test_chat_validation.py | ✅ |
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |
 | REQ-API-05 | T105, T112 | tests/integration/test_hitl.py | ✅ |
-| REQ-API-06 | T137, T142 | - | ⏳ |
+| REQ-API-06 | T137, T142 | tests/contract/test_idempotency.py | ✅ |
 | REQ-API-07 | T160, T166 | - | ⏳ |
 | REQ-GR-01 | T114, T119, T121 | tests/security/test_injection_direct.py, tests/security/test_injection_identity.py | ✅ |
 | REQ-GR-02 | T010, T011, T022, T025, T039, T050, T053, T085 | tests/integration/test_chat_flow.py, tests/integration/test_graph_topology.py, tests/security/test_pii.py, tests/security/test_security_idor.py, tests/unit/test_logging.py, tests/unit/test_pii.py | ✅ |
@@ -25,9 +25,9 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-INF-01 | T034, T035, T154, T164 | - | ✅ |
 | REQ-INF-02 | T033, T164 | - | ✅ |
 | REQ-INF-03 | T035, T164 | - | ✅ |
-| REQ-INF-04 | T161, T165, T167, T168 | tests/test_no_stubs.py, tests/unit/test_traceability.py | ⏳ |
+| REQ-INF-04 | T161, T165, T167, T168 | tests/test_no_stubs.py, tests/unit/test_traceability.py | ✅ |
 | REQ-INF-05 | T003, T008, T036, T037 | tests/test_repo_hygiene.py | ✅ |
-| REQ-INF-06 | T163, T171, T172, T173 | - | ⏳ |
+| REQ-INF-06 | T163, T171, T172, T173 | - | ✅ |
 | REQ-MEM-01 | T086, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_memory_isolation.py | ✅ |
 | REQ-MEM-02 | T123, T125 | tests/integration/test_memory.py | ✅ |
 | REQ-MEM-03 | T122, T125 | tests/integration/test_memory.py | ✅ |
@@ -36,7 +36,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-OBS-03 | T146, T151, T152, T153 | - | ⏳ |
 | REQ-OBS-04 | T147, T155 | - | ⏳ |
 | REQ-OBS-05 | T148, T156 | - | ⏳ |
-| REQ-OBS-06 | T157, T158, T168 | - | ⏳ |
+| REQ-OBS-06 | T157, T158, T168 | - | ✅ |
 | REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py | ✅ |
 | REQ-ORC-02 | T091, T095, T096 | tests/integration/test_graph_parallel.py, tests/integration/test_graph_paths.py | ✅ |
 | REQ-ORC-03 | T092, T095 | tests/integration/test_graph_replan.py | ✅ |
@@ -63,8 +63,8 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-SEC-05 | T002, T033, T168 | - | ✅ |
 | REQ-SEC-06 | T104, T110 | tests/integration/test_hitl.py | ✅ |
 | REQ-SEC-07 | T029, T064, T128, T129 | tests/security/test_security_idor.py | ✅ |
-| REQ-SEC-08 | T136, T142 | - | ⏳ |
-| REQ-SEC-09 | T138, T143, T144 | - | ⏳ |
+| REQ-SEC-08 | T136, T142 | tests/security/test_rate_limit.py | ✅ |
+| REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py | ✅ |
 | REQ-SUP-01 | T059, T061, T063, T064, T066 | tests/integration/test_support_agent.py, tests/unit/test_support_tools.py | ✅ |
 | REQ-SUP-02 | T058, T062 | tests/unit/test_seed.py | ✅ |
 | REQ-SUP-03 | T093, T097 | tests/integration/test_support_resilience.py | ✅ |
