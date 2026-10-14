@@ -45,3 +45,45 @@ async def test_followup_two_turns(
     # carry the original subject (Get Smart) and the follow-up question.
     assert "Get Smart" in supervisor_prompts[1]
     assert "E quanto custa ela?" in supervisor_prompts[1]
+
+
+@pytest.mark.req("REQ-MEM-02")
+@pytest.mark.usefixtures("fresh_retriever")
+async def test_summarization_over_limit(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    auth_headers: dict[str, dict[str, str]],
+) -> None:
+    # Six turns is above MEMORY_MAX_MESSAGES (8 messages: 6 human + 6 assistant → 12 total,
+    # so the summariser must run on the last turn and the planner must see the summary.
+    plans = [make_plan("knowledge") for _ in range(6)]
+    rewrites = [rewrite() for _ in range(6)]
+    fake_llm.script(
+        supervisor=plans,
+        knowledge_rewrite=rewrites,
+        summarize=["Merchant asked about Get Smart terminals, antecipação and Pix fees."],
+    )
+    conversation_id = None
+    questions = [
+        "O que é a Get Smart?",
+        "Como funciona a antecipação?",
+        "Quais as taxas do Pix?",
+        "A Get Smart aceita contactless?",
+        "E para delivery?",
+        "Qual o resumo da nossa conversa?",
+    ]
+    for message in questions:
+        body: dict[str, object] = {"message": message}
+        if conversation_id is not None:
+            body["conversation_id"] = conversation_id
+        resp = await client.post("/v1/chat", json=body, headers=auth_headers["cliente1988"])
+        assert resp.status_code == 200
+        conversation_id = resp.json()["conversation_id"]
+
+    summarize_calls = [text for role, text in fake_llm.calls if role == "summarize"]
+    assert summarize_calls, "the summariser must have been invoked above the limit"
+    last_planner_prompt = next(
+        text for role, text in reversed(fake_llm.calls) if role == "supervisor"
+    )
+    assert "Conversation summary:" in last_planner_prompt
+    assert "Get Smart" in last_planner_prompt  # the running summary carries the subject
