@@ -1,6 +1,7 @@
 """JWT authentication. The effective user is the token's `sub`, nothing else (constitution I)."""
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,7 +10,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import get_settings
-from app.core.errors import unauthorized
+from app.core.errors import forbidden, unauthorized
 from app.db import repo
 from app.db.pool import get_pool
 
@@ -74,3 +75,14 @@ async def current_user(
     if user is None or user["role"] != claims["role"]:
         raise unauthorized()
     return CurrentUser(id=user["id"], role=user["role"])
+
+
+def require_role(*roles: str) -> Callable[[CurrentUser], CurrentUser]:
+    """Dependency factory: raises 403 forbidden_role when the user's role is not allowed."""
+
+    def _check(user: CurrentUser = Depends(current_user)) -> CurrentUser:
+        if user.role not in roles:
+            raise forbidden("forbidden_role", "Operator role required.")
+        return user
+
+    return _check
