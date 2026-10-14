@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main, 001-multi-agent-support]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint (ruff + mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ruff check
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests ruff check src tests scripts
+      - name: ruff format --check
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests ruff format --check src tests scripts
+      - name: mypy
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests mypy
+
+  tests:
+    name: tests (pytest + no-stubs + traceability)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: pytest suite (rede isolada)
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests pytest --maxfail=1
+      - name: no stubs em src/ (constitution V)
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests pytest tests/test_no_stubs.py
+      - name: rastreabilidade REQ → task → teste
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm tests python scripts/check_traceability.py
+
+  secrets:
+    name: gitleaks (histórico completo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deps:
+    name: lock + sast (uv.lock)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: uv lock está em dia
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w ghcr.io/astral-sh/uv:latest uv lock --check

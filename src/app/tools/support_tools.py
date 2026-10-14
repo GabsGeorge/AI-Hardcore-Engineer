@@ -6,10 +6,12 @@ model carries identity. Validation, the 2 s timeout and the `tool_call` audit ev
 from datetime import date, timedelta
 from typing import Any
 
+import psycopg
 from langchain_core.runnables import RunnableConfig
 
 from app.agents.common import ToolImpl
 from app.core.config import get_settings
+from app.core.resilience import with_retry
 from app.db import support_repo
 from app.db.pool import get_pool
 from app.tools.interfaces import (
@@ -92,6 +94,7 @@ def _checks(row: dict[str, Any], lang: str) -> list[str]:
     return list(_CHECKS[lang][key])
 
 
+@with_retry(attempts=2, retry_on=(psycopg.OperationalError,))
 async def get_settlement_schedule(
     args: GetSettlementScheduleInput, config: RunnableConfig
 ) -> list[SettlementDay]:
@@ -101,6 +104,7 @@ async def get_settlement_schedule(
     return [SettlementDay.model_validate(r) for r in rows]
 
 
+@with_retry(attempts=2, retry_on=(psycopg.OperationalError,))
 async def diagnose_terminal(
     args: DiagnoseTerminalInput, config: RunnableConfig
 ) -> list[TerminalDiagnosis]:
@@ -120,6 +124,7 @@ async def diagnose_terminal(
     ]
 
 
+@with_retry(attempts=2, retry_on=(psycopg.OperationalError,))
 async def lookup_decline_code(
     args: LookupDeclineCodeInput, config: RunnableConfig
 ) -> DeclineCodeInfo:
@@ -135,6 +140,7 @@ async def lookup_decline_code(
     )
 
 
+@with_retry(attempts=2, retry_on=(psycopg.OperationalError,))
 async def get_recent_transactions(
     args: GetRecentTransactionsInput, config: RunnableConfig
 ) -> list[TransactionItem]:
@@ -145,6 +151,7 @@ async def get_recent_transactions(
     return [TransactionItem.model_validate(r) for r in rows]
 
 
+@with_retry(attempts=2, retry_on=(psycopg.OperationalError,))
 async def get_customer_profile(
     args: GetCustomerProfileInput, config: RunnableConfig
 ) -> CustomerProfile:

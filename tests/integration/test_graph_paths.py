@@ -8,12 +8,18 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 
 from app.core.config import get_settings
+from app.db.pool import Pool
 from app.graph.builder import build_graph
 from app.graph.synthesize import synthesize
 from tests.fakes import FakeLLM, make_plan
 
+_CONV_ID = "11111111-1111-1111-1111-111111111111"
 CONFIG = {
-    "configurable": {"user_id": "cliente1988", "thread_id": "paths", "trace_id": "0" * 32},
+    "configurable": {
+        "user_id": "cliente1988",
+        "thread_id": f"cliente1988:{_CONV_ID}",
+        "trace_id": "0" * 32,
+    },
     "recursion_limit": 25,
 }
 
@@ -63,17 +69,30 @@ async def test_fan_out_runs_both_specialists_and_synthesizes(
 
 
 @pytest.mark.req("REQ-ORC-04")
-async def test_escalation_route_terminates(fake_llm: FakeLLM) -> None:
-    fake_llm.script(supervisor=[make_plan("escalation")])
+async def test_escalation_route_pauses_with_interrupt(fake_llm: FakeLLM, db_pool: Pool) -> None:
+    """Escalation opens the handoff and pauses the graph via interrupt() — no synthesis runs
+    until a human operator replies. REQ-HITL-02."""
+    async with db_pool.connection() as conn:
+        await conn.execute(
+            "INSERT INTO conversations (id, user_id) VALUES (%s, %s)",
+            (_CONV_ID, "cliente1988"),
+        )
+    fake_llm.script(
+        supervisor=[make_plan("escalation")],
+        escalation=["Lojista quer falar com um humano."],
+    )
     out = await _run(fake_llm)
-    assert out["route_trace"] == [
-        "input_guardrail",
-        "supervisor",
-        "escalation",
-        "synthesize",
-        "output_guardrail",
-    ]
-    assert out["final_response"]
+    # The escalation node calls interrupt() before returning, so synthesize/output_guardrail
+    # do not run; the handoff is persisted in the DB (REQ-HITL-02).
+    assert "synthesize" not in out["route_trace"]
+    assert out.get("__interrupt__"), "escalation must pause the graph before synthesize"
+    async with db_pool.connection() as conn:
+        row = await (
+            await conn.execute(
+                "SELECT status FROM handoffs WHERE conversation_id = %s", (_CONV_ID,)
+            )
+        ).fetchone()
+    assert row is not None and row["status"] == "awaiting_human"
 
 
 @pytest.mark.req("REQ-ORC-04")

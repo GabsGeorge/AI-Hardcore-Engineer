@@ -31,17 +31,25 @@ def _as_data(text: str) -> str:
     return text.replace("<", "&lt;").replace(">", "&gt;")
 
 
+# EN-only cues: common English function words that don't collide with Portuguese articles.
 _EN_HINTS = re.compile(
-    r"\b(the|what|when|how|can|my|is|are|do|does|will|with|which|why|i|you|today)\b", re.I
+    r"\b(the|what|when|how|can|my|is|are|do|does|will|with|which|why|you|today|please|"
+    r"write|about|short|would|should|could|from|their|there|they|we)\b",
+    re.I,
 )
+# PT-only cues: words that don't appear in English; bare 'a'/'o' are left out (also EN articles).
 _PT_HINTS = re.compile(
-    r"\b(o|a|os|as|que|como|quando|meu|minha|é|está|posso|com|qual|hoje|não|para|de)\b", re.I
+    r"\b(que|como|quando|meu|minha|é|está|posso|com|qual|hoje|não|para|de|do|da|dos|das|"
+    r"você|voce|escreva|poema|sobre|olá|ola|oi)\b",
+    re.I,
 )
 
 
 def guess_language(text: str) -> str:
     """Cheap fallback used before the planner has detected the language."""
-    return "en" if len(_EN_HINTS.findall(text)) > len(_PT_HINTS.findall(text)) else "pt"
+    en = len(_EN_HINTS.findall(text))
+    pt = len(_PT_HINTS.findall(text))
+    return "pt" if pt > en else "en" if en else "pt"
 
 
 def _language(state: AgentState) -> str:
