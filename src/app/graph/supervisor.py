@@ -38,6 +38,15 @@ def _planner_messages(state: AgentState) -> list[BaseMessage]:
     messages: list[BaseMessage] = [SystemMessage(content=load_prompt("supervisor"))]
     if state.get("summary"):
         messages.append(SystemMessage(content=f"Conversation summary: {state['summary']}"))
+    # On a replan, tell the planner what did not work so it chooses a different strategy.
+    prior = state.get("results") or []
+    if prior:
+        history = "; ".join(
+            f"{r['agent']} confidence={r['confidence']:.2f}"
+            + (f" error={r['error']}" if r["error"] else "")
+            for r in prior
+        )
+        messages.append(SystemMessage(content=f"Previous attempts: {history}. Try another route."))
     messages.extend(state["messages"][-RECENT_MESSAGES:])
     return messages
 
@@ -82,13 +91,29 @@ async def supervisor(state: AgentState, config: RunnableConfig) -> Command[Any]:
             return Command(goto="degraded_response", update=update)
         return _dispatch(plan, update)
 
-    decision = decide(state.get("results", []), state.get("attempts", 0), settings)
+    results = state.get("results") or []
+    attempts = state.get("attempts", 0)
+    decision = decide(results, attempts, settings)
     if decision == "synthesize":
         return Command(goto="synthesize", update=update)
     if decision == "escalate":
+        update["escalation"] = {
+            "reason": "repeated_failures" if any(r["error"] for r in results) else "low_confidence",
+            "status": "awaiting_human",
+            "ticket_id": None,
+            "summary": "",
+            "pending_action": None,
+        }
         return Command(goto="escalation", update=update)
     if decision == "replan":
-        # STUB(T095): replanning with a second strategy arrives in US4; until then a weak round
-        # ends with an honest degraded answer instead of a guess.
-        return Command(goto="degraded_response", update=update)
+        # Replan with a second strategy: give the planner the history of what did not work so
+        # it chooses a different route (REQ-ORC-03). Results from the previous round are kept
+        # on the state; the next round appends to it via the reducer.
+        plan, tokens = await plan_turn(state)
+        update["tokens_used"] = tokens
+        update["attempts"] = attempts + 1
+        if plan is None or spent + tokens >= settings.token_budget_per_run:
+            return Command(goto="degraded_response", update=update)
+        update |= {"plan": plan.model_dump(), "language": plan.language}
+        return _dispatch(plan, update)
     return Command(goto="degraded_response", update=update)
