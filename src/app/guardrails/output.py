@@ -97,15 +97,17 @@ async def output_guardrail(state: AgentState) -> dict[str, Any]:
     # Barrier 1: PII re-mask over the final reply.
     masked_final, pii_found = mask(final)
 
-    # Barrier 2: financial-promise rewrite.
+    # Barrier 2: financial-promise rewrite. A reply authored by a human operator (HITL resume)
+    # already carries authorized intent, so we skip this rewrite for the escalation route.
     language = _language(state)
     rewritten = False
-    if _FINANCIAL_PROMISE.search(masked_final):
+    results = state.get("results") or []
+    from_human_operator = any(r.get("agent") == "escalation" for r in results)
+    if not from_human_operator and _FINANCIAL_PROMISE.search(masked_final):
         masked_final = _SAFE_REWRITE.get(language, _SAFE_REWRITE["pt"])
         rewritten = True
 
     # Barrier 3: grounding check only when the reply came from Knowledge WITH sources.
-    results = state.get("results") or []
     knowledge_with_sources = [
         r
         for r in results
