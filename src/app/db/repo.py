@@ -160,6 +160,9 @@ async def get_handoff(pool: Pool, ticket_id: UUID) -> dict[str, Any] | None:
         return await cur.fetchone()
 
 
+_DECISION_MAP = {"approve": "approved", "reject": "rejected"}
+
+
 async def resolve_handoff(
     pool: Pool,
     *,
@@ -169,7 +172,13 @@ async def resolve_handoff(
     action_decision: str | None,
 ) -> dict[str, Any]:
     """awaiting_human → resolved. Returns the row BEFORE marking resolved, so the caller can
-    inspect pending_action; raises not_found when the ticket is already closed (409 upstream)."""
+    inspect pending_action; raises not_found when the ticket is already closed (409 upstream).
+
+    The API accepts the imperative ``approve``/``reject``; we normalise to the stored
+    past-participle (``approved``/``rejected``) so ``PendingAction`` roundtrips cleanly."""
+    stored_decision = (
+        _DECISION_MAP.get(action_decision, action_decision) if action_decision else None
+    )
     async with pool.connection() as conn, conn.transaction():
         cur = await conn.execute(
             "UPDATE handoffs SET status = 'resolved', operator_id = %s, operator_reply = %s,"
@@ -179,7 +188,7 @@ async def resolve_handoff(
             " resolved_at = now()"
             " WHERE id = %s AND status = 'awaiting_human'"
             " RETURNING id, conversation_id, user_id, pending_action, operator_reply",
-            (operator_id, _scrub(reply), action_decision, ticket_id),
+            (operator_id, _scrub(reply), stored_decision, ticket_id),
         )
         row = await cur.fetchone()
         if row is None:
