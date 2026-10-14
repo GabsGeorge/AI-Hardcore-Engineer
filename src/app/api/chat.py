@@ -112,4 +112,16 @@ async def chat(
     state = await graph.ainvoke(
         turn_input(body.message), config=graph_config(user.id, conversation_id, trace_id, user.role)
     )
+    # An interrupt() in the escalation node pauses the graph without writing `escalation` to
+    # the state. Reflect the open handoff in the response so the merchant sees `awaiting_human`.
+    if state.get("__interrupt__"):
+        row = await repo.get_latest_handoff_for_conversation(pool, user.id, conversation_id)
+        if row is not None:
+            state["escalation"] = {
+                "reason": row["reason"],
+                "status": "awaiting_human",
+                "ticket_id": str(row["id"]),
+                "summary": row["summary"],
+                "pending_action": row.get("pending_action"),
+            }
     return build_response(state, conversation_id, trace_id)

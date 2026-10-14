@@ -98,7 +98,9 @@ class PendingAction(BaseModel):
 
 
 class Handoff(BaseModel):
-    ticket_id: UUID
+    model_config = ConfigDict(populate_by_name=True)
+
+    ticket_id: UUID = Field(alias="id")
     conversation_id: UUID
     reason: HandoffReason
     status: Literal["awaiting_human", "resolved", "expired"]
