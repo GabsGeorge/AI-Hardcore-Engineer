@@ -5,12 +5,12 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ | Tarefa(s) | Teste(s) | Entregue |
 |---|---|---|---|
 | REQ-API-01 | T030, T075 | tests/contract/test_chat_contract.py, tests/integration/test_chat_flow.py | ✅ |
-| REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_chat_contract.py, tests/integration/test_chat_flow.py | ✅ |
+| REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_chat_contract.py, tests/contract/test_openapi_fuzz.py, tests/integration/test_chat_flow.py | ✅ |
 | REQ-API-03 | T015, T020, T028 | tests/contract/test_chat_validation.py | ✅ |
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |
 | REQ-API-05 | T105, T112 | tests/integration/test_hitl.py | ✅ |
 | REQ-API-06 | T137, T142 | tests/contract/test_idempotency.py | ✅ |
-| REQ-API-07 | T160, T166 | tests/contract/test_stream.py | ⏳ |
+| REQ-API-07 | T160, T166 | tests/contract/test_stream.py | ✅ |
 | REQ-GR-01 | T114, T119, T121 | tests/security/test_injection_direct.py, tests/security/test_injection_identity.py | ✅ |
 | REQ-GR-02 | T010, T011, T022, T025, T039, T050, T053, T085 | tests/integration/test_chat_flow.py, tests/integration/test_graph_topology.py, tests/security/test_pii.py, tests/security/test_security_idor.py, tests/unit/test_logging.py, tests/unit/test_pii.py | ✅ |
 | REQ-GR-03 | T116, T119 | tests/integration/test_out_of_scope.py | ✅ |
@@ -27,15 +27,15 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-INF-03 | T035, T164 | - | ✅ |
 | REQ-INF-04 | T161, T165, T167, T168 | tests/test_no_stubs.py, tests/unit/test_traceability.py | ✅ |
 | REQ-INF-05 | T003, T008, T036, T037 | tests/test_repo_hygiene.py | ✅ |
-| REQ-INF-06 | T163, T171, T172, T173 | - | ✅ |
+| REQ-INF-06 | T163, T171, T172, T173 | tests/test_readme.py | ✅ |
 | REQ-MEM-01 | T086, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_memory_isolation.py | ✅ |
 | REQ-MEM-02 | T123, T125 | tests/integration/test_memory.py | ✅ |
 | REQ-MEM-03 | T122, T125 | tests/integration/test_memory.py | ✅ |
 | REQ-OBS-01 | T011, T025, T026, T032 | tests/unit/test_logging.py | ✅ |
 | REQ-OBS-02 | T145, T150, T154 | tests/integration/test_tracing.py, tests/unit/test_prompt_version.py | ✅ |
 | REQ-OBS-03 | T146, T151, T152, T153 | tests/integration/test_metrics.py, tests/unit/test_obs_profile.py | ✅ |
-| REQ-OBS-04 | T147, T155 | tests/unit/test_online_eval.py | ⏳ |
-| REQ-OBS-05 | T148, T156 | tests/contract/test_feedback.py | ⏳ |
+| REQ-OBS-04 | T147, T155 | tests/unit/test_online_eval.py | ✅ |
+| REQ-OBS-05 | T148, T156 | tests/contract/test_feedback.py | ✅ |
 | REQ-OBS-06 | T157, T158, T168 | tests/integration/test_golden_scenarios.py | ✅ |
 | REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_golden_scenarios.py, tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py | ✅ |
 | REQ-ORC-02 | T091, T095, T096 | tests/integration/test_graph_parallel.py, tests/integration/test_graph_paths.py | ✅ |
@@ -55,7 +55,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-REL-01 | T097, T134, T140 | tests/integration/test_retriever_resilience.py, tests/integration/test_support_resilience.py, tests/unit/test_resilience.py | ✅ |
 | REQ-REL-02 | T135, T141 | tests/unit/test_fallback.py | ✅ |
 | REQ-REL-03 | T134, T140 | tests/unit/test_resilience.py | ✅ |
-| REQ-REL-04 | T169, T170 | - | ⏳ |
+| REQ-REL-04 | T169, T170 | - | ✅ |
 | REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
 | REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
