@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 39,
+  "title": "Getnet - Custo",
+  "uid": "getnet-cost",
+  "editable": true,
+  "refresh": "5m",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Tokens totais / hora",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "targets": [{ "expr": "sum(rate(getnet_tokens_total[1h]))", "legendFormat": "tokens/s" }]
+    },
+    {
+      "id": 2,
+      "type": "piechart",
+      "title": "Distribuição de tokens por papel (24 h)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (role) (increase(getnet_tokens_total[24h]))",
+          "legendFormat": "{{role}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Chamadas de /v1/chat (24 h)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(increase(getnet_http_requests_total{route=\"/v1/chat\"}[24h]))",
+          "legendFormat": "chats"
+        }
+      ]
+    }
+  ]
+}

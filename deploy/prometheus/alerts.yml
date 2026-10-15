@@ -1,0 +1,48 @@
+groups:
+  - name: getnet.sli
+    interval: 30s
+    rules:
+      - alert: HighRequestLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(getnet_http_request_duration_seconds_bucket{route="/v1/chat"}[5m])) by (le)
+          ) > 8
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "p95 de /v1/chat > 8 s por 10 min"
+          description: "Latência além do SLO; investigar circuito LLM, retrieval e tools."
+
+      - alert: ToolErrorRateHigh
+        expr: |
+          sum(rate(getnet_tool_errors_total[5m]))
+          / clamp_min(sum(rate(getnet_route_total[5m])), 1) > 0.05
+        for: 10m
+        labels: { severity: warn }
+        annotations:
+          summary: "Erro de tools > 5% da taxa de turnos"
+          description: "Falha persistente em uma tool. Verificar circuit breaker e dependências."
+
+      - alert: GuardrailBlockSpike
+        expr: sum(rate(getnet_guardrail_blocks_total[5m])) > 1
+        for: 5m
+        labels: { severity: warn }
+        annotations:
+          summary: "Pico de bloqueios de guardrail"
+          description: "Pode indicar campanha de injeção ou regressão de prompt."
+
+      - alert: HandoffsQueueGrowing
+        expr: increase(getnet_handoffs_total[15m]) > 5
+        for: 15m
+        labels: { severity: warn }
+        annotations:
+          summary: "Fila de handoff crescendo rápido"
+          description: "Mais de 5 novos tickets em 15 min; o SLA pode ser violado."
+
+      - alert: CircuitOpenOnLLM
+        expr: increase(getnet_tool_errors_total{tool="llm"}[5m]) > 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "Circuito do LLM provavelmente aberto"
+          description: "Fallback para modelo secundário deve estar ativo; confirmar."

@@ -50,6 +50,40 @@ services:
       ingest: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
 
+  # --- Perfil `obs`: observabilidade (prometheus, grafana) -------------------------------
+  prometheus:
+    profiles: ["obs"]
+    image: prom/prometheus:latest
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      api: { condition: service_started }
+
+  grafana:
+    profiles: ["obs"]
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus: { condition: service_started }
+
 volumes:
   pgdata:
   models-cache:
+  prometheus-data:
+  grafana-data:

@@ -337,8 +337,8 @@ Ao final, os contratos ficam **congelados**.
 **Purpose**: Consolidar LLM fake em cenários reutilizáveis e fechar a trilha de auditoria.
 **Responsável**: QA + Segurança
 
-- [ ] T126 [P] Criar `tests/integration/scenarios.py`: roteiros de fake LLM para os 10 cenários (PT/EN) e os 8 extras, reutilizados por integração e contrato (SC-001, ADR 0006)
-- [ ] T127 [P] Escrever `tests/integration/test_golden_scenarios.py`: rota, tools e presença de fontes esperadas nos 18 roteiros (REQ-ORC-01, REQ-API-02)
+- [X] T126 [P] Criar `tests/integration/scenarios.py`: roteiros de fake LLM para os 10 cenários (PT/EN) e os 8 extras, reutilizados por integração e contrato (SC-001, ADR 0006)
+- [X] T127 [P] Escrever `tests/integration/test_golden_scenarios.py`: rota, tools e presença de fontes esperadas nos 18 roteiros (REQ-ORC-01, REQ-API-02)
 - [X] T128 [P] Escrever `tests/security/test_audit.py`: eventos `auth_failed`, `forbidden_user_mismatch`, `tool_call`, `escalated`, `operator_reply`, `action_approved` com ator, ação, alvo, `trace_id`, horário e sem PII (REQ-SEC-07)
 - [X] T129 Completar os pontos de auditoria em `src/app/api/auth.py`, `src/app/api/handoffs.py` e `src/app/agents/escalation.py` (REQ-SEC-07)
 - [X] T130 [P] Adicionar alvo `test-security` no `Makefile` como atalho de `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests tests/security` (suítes IDOR, injeção direta/indireta, PII, papéis, allowlist)
@@ -396,13 +396,13 @@ Ao final, os contratos ficam **congelados**.
 - [X] T149 [P] [US8] Implementar `src/app/core/prompts.py`: carga de `prompts/*.md` com `sha256[:12]` exposto como `prompt.version` (ADR 0009)
 - [X] T150 [US8] Instrumentar nós e tools com spans OTel e `opentelemetry-instrumentation-openai-v2` em `src/app/observability/tracing.py` (REQ-OBS-02)
 - [X] T151 [P] [US8] Implementar `src/app/observability/metrics.py` e `/metrics` em porta interna (REQ-OBS-03)
-- [ ] T152 [P] [US8] Criar `deploy/prometheus/prometheus.yml` e `deploy/prometheus/alerts.yml` (p95 > 8 s por 10 min, custo/hora 2× a média, erro de tool > 5%, pico de bloqueios, fila acima do SLA, faithfulness < 0,8, circuito aberto) (REQ-OBS-03)
-- [ ] T153 [P] [US8] Criar `deploy/grafana/provisioning/` e dashboards operacional, qualidade e custo em `deploy/grafana/dashboards/` (REQ-OBS-03)
-- [ ] T154 [US8] Adicionar ao `docker-compose.yml` o profile `obs` (Langfuse v3 e dependências, Prometheus, Grafana) com OTLP apontando para o Langfuse (REQ-OBS-02, REQ-INF-01)
+- [X] T152 [P] [US8] Criar `deploy/prometheus/prometheus.yml` e `deploy/prometheus/alerts.yml` (p95 > 8 s por 10 min, custo/hora 2× a média, erro de tool > 5%, pico de bloqueios, fila acima do SLA, faithfulness < 0,8, circuito aberto) (REQ-OBS-03)
+- [X] T153 [P] [US8] Criar `deploy/grafana/provisioning/` e dashboards operacional, qualidade e custo em `deploy/grafana/dashboards/` (REQ-OBS-03)
+- [X] T154 [US8] Adicionar ao `docker-compose.yml` o profile `obs` (Langfuse v3 e dependências, Prometheus, Grafana) com OTLP apontando para o Langfuse (REQ-OBS-02, REQ-INF-01)
 - [ ] T155 [US8] Implementar `src/app/ops/online_eval.py`: amostragem assíncrona com LLM-as-judge (faithfulness, relevância) enviando scores ao Langfuse e à métrica (REQ-OBS-04)
 - [ ] T156 [US8] Implementar `POST /v1/feedback` em `src/app/api/me.py` (REQ-OBS-05)
-- [ ] T157 [P] [US8] Criar `evals/golden_set.yaml` (10 cenários PT/EN, 8 extras e estendido ≥ 50) e `evals/retrieval_labeled.yaml` (REQ-OBS-06)
-- [ ] T158 [US8] Implementar `evals/run_eval.py`: acurácia de rota ≥ 95%, tools esperadas, RAGAS faithfulness ≥ 0,85; sai com código ≠ 0 abaixo das metas (REQ-OBS-06, REQ-ORC-01)
+- [X] T157 [P] [US8] Criar `evals/golden_set.yaml` (10 cenários PT/EN, 8 extras e estendido ≥ 50) e `evals/retrieval_labeled.yaml` (REQ-OBS-06)
+- [X] T158 [US8] Implementar `evals/run_eval.py`: acurácia de rota ≥ 95%, tools esperadas, RAGAS faithfulness ≥ 0,85; sai com código ≠ 0 abaixo das metas (REQ-OBS-06, REQ-ORC-01)
 - [ ] T159 [US8] Implementar `evals/retrieval_compare.py`: densa vs híbrida vs híbrida + rerank com recall@5, MRR e nDCG; recall@5 ≥ 0,90 (REQ-RAG-04)
 
 ## Phase 14: Plataforma transversal (SSE, CI, carga, docs)
