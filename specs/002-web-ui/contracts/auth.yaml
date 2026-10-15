@@ -1,0 +1,181 @@
+openapi: 3.1.0
+info:
+  title: Getnet Support — Autenticação
+  version: 1.0.0
+  description: |
+    Camada de contas e sessão. Cookies HttpOnly `session` (JWT) e `csrf`. CSRF double-submit:
+    toda mutação exige o cookie `csrf` enviado em `X-CSRF-Token`.
+servers: [{ url: https://localhost }]
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error, trace_id]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: array
+              items: { type: object, additionalProperties: true }
+        trace_id: { type: string }
+    GenericOk:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+    GenericPending:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [pending] }
+      description: >
+        Resposta deliberadamente genérica para e-mails novos, existentes ou mal-formados;
+        o cliente nunca descobre se a conta existe (FR-004).
+    RegisterRequest:
+      type: object
+      required: [display_name, email, password]
+      properties:
+        display_name: { type: string, minLength: 2, maxLength: 80 }
+        email:        { type: string, format: email, maxLength: 254 }
+        password:     { type: string, minLength: 12, maxLength: 256 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email }
+        password: { type: string }
+    LoginResponse:
+      type: object
+      required: [account]
+      properties:
+        account:
+          type: object
+          required: [id, role, display_name]
+          properties:
+            id:           { type: string }
+            role:         { type: string, enum: [merchant, operator, admin] }
+            display_name: { type: string }
+    ResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    ResetConfirm:
+      type: object
+      required: [token, new_password]
+      properties:
+        token:        { type: string }
+        new_password: { type: string, minLength: 12 }
+    VerifyRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    Session:
+      type: object
+      required: [jti, issued_at, last_seen_at, current]
+      properties:
+        jti:          { type: string }
+        issued_at:    { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        ip:           { type: string }
+        user_agent:   { type: string }
+        current:      { type: boolean }
+  securitySchemes:
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: session
+    csrf:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+paths:
+  /v1/auth/register:
+    post:
+      summary: Autocadastro (sempre papel merchant); dispara e-mail de confirmação
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RegisterRequest" } } }
+      responses:
+        "202": { description: Resposta genérica — veja GenericPending,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/GenericPending" } } } }
+        "422": { description: Senha ou e-mail inválidos (mas sem revelar existência),
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: Rate-limited (IP ou e-mail),
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /v1/auth/verify-email:
+    post:
+      summary: Confirma e-mail usando o token do link; marca conta como active
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/VerifyRequest" } } }
+      responses:
+        "200": { description: Confirmada,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/GenericOk" } } } }
+        "410": { description: Token inválido, expirado ou usado,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /v1/auth/login:
+    post:
+      summary: Autentica; emite cookies session + csrf
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LoginRequest" } } }
+      responses:
+        "200":
+          description: Autenticada — cookies setados nos headers Set-Cookie
+          headers:
+            Set-Cookie:
+              description: session=...; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200 e csrf=...; SameSite=Lax
+              schema: { type: string }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LoginResponse" } } }
+        "401": { description: Credenciais inválidas (mensagem genérica),
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "423": { description: Conta temporariamente bloqueada,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { description: Rate-limited por IP,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /v1/auth/logout:
+    post:
+      summary: Revoga a sessão atual; limpa os cookies
+      security: [{ cookieSession: [], csrf: [] }]
+      responses: { "204": { description: Deslogada } }
+  /v1/auth/password/reset-request:
+    post:
+      summary: Solicita link de redefinição; resposta genérica
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ResetRequest" } } }
+      responses:
+        "202": { description: GenericPending,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/GenericPending" } } } }
+  /v1/auth/password/reset:
+    post:
+      summary: Troca a senha; revoga todas as sessões da conta
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ResetConfirm" } } }
+      responses:
+        "200": { description: Trocada,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/GenericOk" } } } }
+        "410": { description: Token inválido/expirado/usado,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /v1/auth/sessions:
+    get:
+      summary: Minhas sessões ativas
+      security: [{ cookieSession: [] }]
+      responses:
+        "200":
+          description: Lista
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Session" } } } }
+    delete:
+      summary: Revoga todas as outras sessões (menos a atual)
+      security: [{ cookieSession: [], csrf: [] }]
+      responses: { "204": { description: Revogadas } }

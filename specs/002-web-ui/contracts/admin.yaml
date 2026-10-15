@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: Getnet Support — Administração
+  version: 1.0.0
+  description: Operações exclusivas de admin. Todas exigem papel admin.
+servers: [{ url: https://localhost }]
+components:
+  schemas:
+    Error: { $ref: "./auth.yaml#/components/schemas/Error" }
+    InviteRequest:
+      type: object
+      required: [display_name, email, role]
+      properties:
+        display_name: { type: string, minLength: 2, maxLength: 80 }
+        email:        { type: string, format: email, maxLength: 254 }
+        role:         { type: string, enum: [operator, admin] }
+    Account:
+      type: object
+      required: [id, email, display_name, role, status]
+      properties:
+        id:           { type: string }
+        email:        { type: string }
+        display_name: { type: string }
+        role:         { type: string, enum: [merchant, operator, admin] }
+        status:       { type: string, enum: [pending, active, locked, deactivated] }
+        linked_merchant_id: { type: string, nullable: true }
+    LinkRequest:
+      type: object
+      required: [merchant_user_id]
+      properties:
+        merchant_user_id: { type: string, description: "ID do seed, ex. cliente1988" }
+    QueueOverview:
+      type: object
+      required: [awaiting_human, sla_breached_today, expired_today]
+      properties:
+        awaiting_human:     { type: integer }
+        sla_breached_today: { type: integer }
+        expired_today:      { type: integer }
+    AuditEvent:
+      type: object
+      required: [ts, actor_id, actor_role, action, target, outcome, trace_id]
+      properties:
+        ts:         { type: string, format: date-time }
+        actor_id:   { type: string }
+        actor_role: { type: string }
+        action:     { type: string }
+        target:     { type: string }
+        outcome:    { type: string, enum: [allowed, denied, error] }
+        trace_id:   { type: string }
+  securitySchemes:
+    cookieSession: { $ref: "./auth.yaml#/components/securitySchemes/cookieSession" }
+    csrf:          { $ref: "./auth.yaml#/components/securitySchemes/csrf" }
+paths:
+  /v1/admin/accounts:
+    get:
+      summary: Lista contas (admins/operadores/lojistas)
+      security: [{ cookieSession: [] }]
+      parameters:
+        - { in: query, name: role,   schema: { type: string, enum: [merchant, operator, admin] } }
+        - { in: query, name: status, schema: { type: string, enum: [pending, active, locked, deactivated] } }
+        - { in: query, name: limit,  schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Account" } } } }
+    post:
+      summary: Convida um operador ou admin — manda link para a pessoa definir a senha
+      security: [{ cookieSession: [], csrf: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/InviteRequest" } } }
+      responses:
+        "202":
+          content: { application/json: { schema: { $ref: "./auth.yaml#/components/schemas/GenericPending" } } }
+  /v1/admin/accounts/{account_id}/activate:
+    post:
+      summary: Reativa uma conta desativada
+      security: [{ cookieSession: [], csrf: [] }]
+      parameters: [{ in: path, name: account_id, required: true, schema: { type: string } }]
+      responses: { "204": { description: Reativada } }
+  /v1/admin/accounts/{account_id}/deactivate:
+    post:
+      summary: Desativa uma conta; destrói todas as sessões
+      security: [{ cookieSession: [], csrf: [] }]
+      parameters: [{ in: path, name: account_id, required: true, schema: { type: string } }]
+      responses: { "204": { description: Desativada } }
+  /v1/admin/merchants/{merchant_user_id}/link:
+    post:
+      summary: Liga uma conta de lojista a um merchant existente
+      security: [{ cookieSession: [], csrf: [] }]
+      parameters: [{ in: path, name: merchant_user_id, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account_id]
+              properties: { account_id: { type: string } }
+      responses:
+        "204": { description: Vinculada }
+        "409":
+          description: >
+            Merchant já ligado a outra conta (unique constraint). Garante que um estabelecimento
+            fica em no máximo uma conta (FR-021).
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    delete:
+      summary: Desvincula uma conta de lojista do merchant
+      security: [{ cookieSession: [], csrf: [] }]
+      parameters: [{ in: path, name: merchant_user_id, required: true, schema: { type: string } }]
+      responses: { "204": { description: Desvinculada } }
+  /v1/admin/queue:
+    get:
+      summary: Visão da fila do dia
+      security: [{ cookieSession: [] }]
+      responses:
+        "200":
+          content: { application/json: { schema: { $ref: "#/components/schemas/QueueOverview" } } }
+  /v1/admin/audit:
+    get:
+      summary: Eventos de auditoria recentes (actors pseudonimizados onde aplicável)
+      security: [{ cookieSession: [] }]
+      parameters:
+        - { in: query, name: action, schema: { type: string } }
+        - { in: query, name: since,  schema: { type: string, format: date-time } }
+        - { in: query, name: limit,  schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        "200":
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AuditEvent" } } } }

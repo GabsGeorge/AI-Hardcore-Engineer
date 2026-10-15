@@ -36,3 +36,5 @@
   implementation choices; the token system itself is defined later in DESIGN.md (Impeccable).
 - Clarify session 2026-10-15 resolved: admin-only merchant linking, separate "delete
   conversations" vs "delete account", local dev inbox (SMTP), 30 min idle / 12 h sessions.
+- Plan phase 2026-10-15 completed: plan.md, research.md, data-model.md, contracts/
+  (auth.yaml, me.yaml, admin.yaml, events.md delta) and quickstart.md.
