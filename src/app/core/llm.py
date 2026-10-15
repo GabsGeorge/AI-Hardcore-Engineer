@@ -20,16 +20,30 @@ def set_overrides(
 
 
 def get_model(role: str) -> Any:
-    """Chat model for a graph role (supervisor, knowledge, support, synthesize, ...)."""
+    """Chat model for a graph role (supervisor, knowledge, support, synthesize, ...).
+
+    When ``OPENAI_MODEL_FALLBACK`` is configured, the primary model is wrapped with
+    ``.with_fallbacks([fallback])`` (REQ-REL-02): if the primary fails (timeout or server
+    error), LangChain automatically retries the same request on the fallback model.
+    """
     if _model_factory is not None:
         return _model_factory(role)
     s = get_settings()
-    return ChatOpenAI(
+    primary = ChatOpenAI(
         model=s.openai_model_primary,
         api_key=s.openai_api_key,
         timeout=20,
         max_retries=2,
     )
+    if s.openai_model_fallback:
+        fallback = ChatOpenAI(
+            model=s.openai_model_fallback,
+            api_key=s.openai_api_key,
+            timeout=20,
+            max_retries=1,
+        )
+        return primary.with_fallbacks([fallback])
+    return primary
 
 
 def get_embeddings() -> Any:

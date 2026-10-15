@@ -48,6 +48,27 @@ async def reply(
         reply=body.reply,
         action_decision=body.action_decision,
     )
+    # Dois eventos distintos quando houve ação pendente: operator_reply + action_<decision>.
+    # O target carrega só o ticket; o reply e params não são copiados para auditoria.
+    await repo.insert_audit_event(
+        get_pool(),
+        actor_id=user.id,
+        actor_role=user.role,
+        action="operator_reply",
+        target=f"ticket:{ticket_id}",
+        outcome="allowed",
+        trace_id=request.state.trace_id,
+    )
+    if body.action_decision is not None:
+        await repo.insert_audit_event(
+            get_pool(),
+            actor_id=user.id,
+            actor_role=user.role,
+            action=f"action_{body.action_decision}d",
+            target=f"ticket:{ticket_id}",
+            outcome="allowed",
+            trace_id=request.state.trace_id,
+        )
 
     # Resume the paused graph on the SAME thread, with the TICKET OWNER's identity (ADR 0005):
     # the operator may have a different user_id, but the resumed turn must act for the merchant.
