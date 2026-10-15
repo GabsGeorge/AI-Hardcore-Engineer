@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: Getnet Support — Minha conta
+  version: 1.0.0
+  description: |
+    Extensão das rotas /v1/me. Mantém DELETE /v1/me/data (apaga conversas) e adiciona
+    DELETE /v1/me/account (exclui conta inteira). Lista conversas do lojista.
+servers: [{ url: https://localhost }]
+components:
+  schemas:
+    Error: { $ref: "./auth.yaml#/components/schemas/Error" }
+    ConversationSummary:
+      type: object
+      required: [id, started_at, last_activity_at, handoff_status, last_message_preview]
+      properties:
+        id: { type: string, format: uuid }
+        started_at:          { type: string, format: date-time }
+        last_activity_at:    { type: string, format: date-time }
+        handoff_status:      { type: string, enum: [none, awaiting_human, resolved, expired] }
+        last_message_preview:{ type: string, maxLength: 200 }
+    DeleteResult:
+      type: object
+      required: [deleted]
+      properties:
+        deleted:
+          type: object
+          additionalProperties: { type: integer }
+        pseudonym: { type: string }
+    DeleteAccountRequest:
+      type: object
+      required: [password, confirmation]
+      properties:
+        password:     { type: string, description: "A senha atual, exigida como segunda prova de titularidade" }
+        confirmation: { type: string, enum: [EXCLUIR, DELETE] }
+  securitySchemes:
+    cookieSession: { $ref: "./auth.yaml#/components/securitySchemes/cookieSession" }
+    csrf:          { $ref: "./auth.yaml#/components/securitySchemes/csrf" }
+paths:
+  /v1/me/conversations:
+    get:
+      summary: Minhas conversas (lojista), mais recentes primeiro
+      security: [{ cookieSession: [] }]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/ConversationSummary" }
+                  next_cursor: { type: string, nullable: true }
+  /v1/me/data:
+    delete:
+      summary: Apaga minhas conversas e checkpoints; mantém a conta
+      security: [{ cookieSession: [], csrf: [] }]
+      responses:
+        "200":
+          content: { application/json: { schema: { $ref: "#/components/schemas/DeleteResult" } } }
+  /v1/me/account:
+    delete:
+      summary: Exclui minha conta; confirmada pela senha atual
+      security: [{ cookieSession: [], csrf: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/DeleteAccountRequest" } } }
+      responses:
+        "204":
+          description: Excluída; cookies limpos
+          headers:
+            Set-Cookie:
+              description: Session cookie com Max-Age=0
+              schema: { type: string }
+        "401": { description: Senha inválida,
+                 content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
