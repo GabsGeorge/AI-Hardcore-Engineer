@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -15,6 +17,7 @@ from app.db.pool import close_pool, open_pool
 from app.graph.builder import build_graph
 from app.observability.logging import configure_logging, get_logger
 from app.observability.tracing import configure_tracing, current_trace_id, get_tracer
+from app.ops.scheduler import start as start_scheduler
 
 
 @asynccontextmanager
@@ -28,9 +31,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await checkpointer.setup()
     app.state.graph = build_graph(checkpointer)
     app.state.redis = Redis.from_url(settings.redis_url)
+    app.state.scheduler_task = await start_scheduler(pool)
     try:
         yield
     finally:
+        app.state.scheduler_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await app.state.scheduler_task
         await app.state.redis.aclose()
         await close_pool()
 
