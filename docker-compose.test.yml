@@ -49,6 +49,40 @@ services:
     network_mode: none
     command: ["sh", "-c", "ruff check . && ruff format --check . && mypy"]
 
+  # --- Frontend (feature 002) --------------------------------------------------------------
+  # Shared Node image: install once, mount the source, reuse for lint / unit / E2E.
+  # The three services below fall back to `npm install` when package-lock.json is absent
+  # (first bootstrap). The CI commits a lockfile and `npm ci` runs after that.
+  web-lint:
+    image: node:22.11.0-alpine
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    networks: [testnet]
+    command: ["sh", "-c", "[ -f package-lock.json ] && npm ci || npm install --no-audit --no-fund; npm run lint"]
+
+  web-tests:
+    image: node:22.11.0-alpine
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    networks: [testnet]
+    command: ["sh", "-c", "[ -f package-lock.json ] && npm ci || npm install --no-audit --no-fund; npm run test"]
+
+  web-e2e:
+    image: mcr.microsoft.com/playwright:v1.49.0-jammy
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    environment:
+      PLAYWRIGHT_BASE_URL: http://web
+      MAILPIT_URL: http://mailpit:8025
+    networks: [testnet]
+    depends_on:
+      web: { condition: service_healthy }
+      mailpit: { condition: service_healthy }
+    command: ["sh", "-c", "[ -f package-lock.json ] && npm ci || npm install --no-audit --no-fund; npx playwright install --with-deps chromium; npm run e2e"]
+
 networks:
   testnet:
     internal: true

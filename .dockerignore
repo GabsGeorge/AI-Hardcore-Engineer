@@ -23,3 +23,10 @@ docs
 specs
 Dockerfile
 docker-compose*.yml
+
+# Feature 002 — frontend build output and local caches
+apps/web/node_modules/
+apps/web/dist/
+apps/web/coverage/
+apps/web/playwright-report/
+apps/web/test-results/

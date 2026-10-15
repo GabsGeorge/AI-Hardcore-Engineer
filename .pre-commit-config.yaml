@@ -9,3 +9,18 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      # Lint and format apps/web via docker compose; the host needs no Node install.
+      # The hook only runs when something inside apps/web/ changes.
+      - id: web-lint
+        name: web lint (eslint + prettier + tsc)
+        entry: >
+          docker compose -f docker-compose.yml -f docker-compose.test.yml
+          run --rm --no-deps web-lint
+        language: system
+        pass_filenames: false
+        files: ^apps/web/.*\.(ts|tsx|js|jsx|json|css|html|md)$
+        # The hook is heavy (pulls Node, installs deps). CI runs it on every PR, so skip it
+        # locally by default; developers opt in with PRE_COMMIT_WEB_LINT=1.
+        stages: [manual]
