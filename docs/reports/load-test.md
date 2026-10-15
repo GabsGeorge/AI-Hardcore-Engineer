@@ -8,7 +8,7 @@ LLM determinísticos nos cenários reproducíveis em laboratório.
 ```bash
 cp .env.example .env
 # gere um token para o lojista teste:
-export K6_AUTH_TOKEN=$(docker compose run --rm api python scripts/issue_token.py cliente1988 merchant)
+export K6_AUTH_TOKEN=$(docker compose run --rm api python scripts/issue_token.py cliente1988 --role merchant)
 docker compose up -d --build
 docker compose --profile load run --rm k6 run /scripts/chat.js
 ```

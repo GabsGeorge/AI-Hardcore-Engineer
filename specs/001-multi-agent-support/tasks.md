@@ -368,11 +368,11 @@ Ao final, os contratos ficam **congelados**.
 - [X] T136 [P] [US9] Escrever `tests/security/test_rate_limit.py::test_rate_limit_429`: 31ª requisição no minuto → 429 com `Retry-After` (REQ-SEC-08)
 - [X] T137 [P] [US9] Escrever `tests/contract/test_idempotency.py`: mesma chave e corpo → mesma resposta e uma execução; corpo diferente → 409 `idempotency_conflict` (REQ-API-06)
 - [X] T138 [P] [US9] Escrever `tests/integration/test_lgpd.py::test_delete_my_data` e `::test_retention_purge`: exclusão remove conversas, checkpoints e feedback e pseudonimiza auditoria; expurgo respeita 90 d / 30 d / 1 ano (REQ-SEC-09)
-- [X] T139 [P] [US9] Escrever `tests/integration/test_sla.py`: relógio em 16 min → aviso ao lojista, prioridade `high`, alerta; em 24 h 1 min → `expired`, execução encerrada, mensagem final; resposta a ticket expirado → 409 (REQ-HITL-05)
+- [X] T139 [P] [US9] Escrever `tests/integration/test_sla.py`: relógio em 16 min → aviso ao lojista, prioridade `high`, alerta; em 24 h 1 min → `expired`, execução encerrada, mensagem final; resposta a ticket expirado → 409 (REQ-HITL-05) — *Nota (audit T176): prioridade `high` e expiração com mensagem final cobertas; o aviso ao lojista no estouro do SLA fica para a UI (feature 002).*
 
 ### Implementação
 
-- [X] T140 [US9] Completar `src/app/core/resilience.py` com circuit breaker async (estado por processo, `shortcut:` documentado) e aplicá-lo a OpenAI, DuckDuckGo e reranker (REQ-REL-01, REQ-REL-03)
+- [X] T140 [US9] Completar `src/app/core/resilience.py` com circuit breaker async (estado por processo, `shortcut:` documentado) e aplicá-lo a OpenAI, DuckDuckGo e reranker (REQ-REL-01, REQ-REL-03) — *Nota (audit T176): breaker só no DuckDuckGo; LLM coberto por retries + fallback e reranker é local (ver docs/limitations.md).*
 - [X] T141 [US9] Adicionar fallback de modelo com `with_fallbacks` em `src/app/core/llm.py` (REQ-REL-02)
 - [X] T142 [US9] Implementar `src/app/api/limits.py`: rate limit por janela fixa de 60 s (`shortcut:` documentado) e idempotência `idem:{user}:{key}` por 24 h; aplicar em `src/app/api/chat.py` (REQ-SEC-08, REQ-API-06)
 - [X] T143 [US9] Implementar `src/app/api/me.py`: `DELETE /v1/me/data` com `adelete_thread` e pseudonimização `deleted:<hmac>` (REQ-SEC-09)
@@ -399,10 +399,10 @@ Ao final, os contratos ficam **congelados**.
 - [X] T152 [P] [US8] Criar `deploy/prometheus/prometheus.yml` e `deploy/prometheus/alerts.yml` (p95 > 8 s por 10 min, custo/hora 2× a média, erro de tool > 5%, pico de bloqueios, fila acima do SLA, faithfulness < 0,8, circuito aberto) (REQ-OBS-03)
 - [X] T153 [P] [US8] Criar `deploy/grafana/provisioning/` e dashboards operacional, qualidade e custo em `deploy/grafana/dashboards/` (REQ-OBS-03)
 - [X] T154 [US8] Adicionar ao `docker-compose.yml` o profile `obs` (Langfuse v3 e dependências, Prometheus, Grafana) com OTLP apontando para o Langfuse (REQ-OBS-02, REQ-INF-01)
-- [X] T155 [US8] Implementar `src/app/ops/online_eval.py`: amostragem assíncrona com LLM-as-judge (faithfulness, relevância) enviando scores ao Langfuse e à métrica (REQ-OBS-04)
+- [X] T155 [US8] Implementar `src/app/ops/online_eval.py`: amostragem assíncrona com LLM-as-judge (faithfulness, relevância) enviando scores ao Langfuse e à métrica (REQ-OBS-04) — *Nota (audit T176): ligado ao /v1/chat; scores vão para Prometheus e log, não para o Langfuse.*
 - [X] T156 [US8] Implementar `POST /v1/feedback` em `src/app/api/me.py` (REQ-OBS-05)
 - [X] T157 [P] [US8] Criar `evals/golden_set.yaml` (10 cenários PT/EN, 8 extras e estendido ≥ 50) e `evals/retrieval_labeled.yaml` (REQ-OBS-06)
-- [X] T158 [US8] Implementar `evals/run_eval.py`: acurácia de rota ≥ 95%, tools esperadas, RAGAS faithfulness ≥ 0,85; sai com código ≠ 0 abaixo das metas (REQ-OBS-06, REQ-ORC-01)
+- [X] T158 [US8] Implementar `evals/run_eval.py`: acurácia de rota ≥ 95%, tools esperadas, RAGAS faithfulness ≥ 0,85; sai com código ≠ 0 abaixo das metas (REQ-OBS-06, REQ-ORC-01) — *Nota (audit T176): roda contra a API com modelo real; faithfulness fica na avaliação online, não no script.*
 - [X] T159 [US8] Implementar `evals/retrieval_compare.py`: densa vs híbrida vs híbrida + rerank com recall@5, MRR e nDCG; recall@5 ≥ 0,90 (REQ-RAG-04)
 
 ## Phase 14: Plataforma transversal (SSE, CI, carga, docs)
@@ -439,10 +439,10 @@ Ao final, os contratos ficam **congelados**.
 
 **Purpose**: Validação final antes da entrega.
 
-- [ ] T176 Executar `/ponytail-audit` no repositório e aplicar os achados "Must fix" e "Should fix"
+- [X] T176 Executar `/ponytail-audit` no repositório e aplicar os achados "Must fix" e "Should fix"
 - [ ] T177 Executar `/security-review` e revisar o threat model contra o código final (`specs/001-multi-agent-support/threat-model.md`)
-- [ ] T178 Executar `/ponytail-debt` e registrar os `shortcut:` aceitos na seção de limitações do README
-- [ ] T179 Validar `specs/001-multi-agent-support/quickstart.md` do zero num clone limpo (sem `make` e com `make`)
+- [X] T178 Executar `/ponytail-debt` e registrar os `shortcut:` aceitos na seção de limitações do README — registrado em `docs/limitations.md`, linkado no README
+- [ ] T179 Validar `specs/001-multi-agent-support/quickstart.md` do zero num clone limpo (sem `make` e com `make`) — *Nota: comandos corrigidos (`eval`, `--role`); falta rodar num clone limpo com chave real.*
 - [ ] T180 Atualizar `docs/architecture.drawio` com o que mudou durante a implementação
 
 ---

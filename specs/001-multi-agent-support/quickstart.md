@@ -97,12 +97,14 @@ em `auth`, `guardrails` e `pii`; `scripts/check_traceability.py` sem requisito s
 ## 8. Avaliação com modelo real
 
 ```bash
-make eval          # docker compose run --rm eval
+make eval          # docker compose --profile eval run --rm eval
+docker compose --profile eval run --rm eval python evals/retrieval_compare.py
 ```
 
-Golden set (10 cenários PT/EN + extras), acurácia de rota ≥ 95%, faithfulness ≥ 0,85 e
-`evals/retrieval_compare.py` (densa vs híbrida vs híbrida + rerank, recall@5 ≥ 0,90). Relatórios
-em `evals/reports/` (ignorado pelo git). (REQ-OBS-06, SC-001/002/006/007)
+Golden set (18 cenários PT/EN) com acurácia de rota ≥ 95%, depois densa vs híbrida vs
+híbrida + rerank (recall@5 ≥ 0,90 no modo entregue). Os dois saem com código ≠ 0 abaixo da meta e
+gastam tokens reais. Faithfulness é medida em produção pela avaliação online amostrada
+(`EVAL_SAMPLE_RATE`). (REQ-OBS-06, SC-001/002/006/007)
 
 ## 9. Observabilidade (opcional)
 
