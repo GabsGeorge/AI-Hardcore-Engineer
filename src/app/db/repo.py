@@ -210,3 +210,49 @@ async def get_latest_handoff_for_conversation(
             (conversation_id, user_id),
         )
         return await cur.fetchone()
+
+
+# --- LGPD / feedback -------------------------------------------------------------------------
+async def list_user_thread_ids(pool: Pool, user_id: str) -> list[str]:
+    """Thread IDs do dono, no formato ``user_id:conversation_id`` usado pelo checkpointer."""
+    async with pool.connection() as conn:
+        cur = await conn.execute("SELECT id FROM conversations WHERE user_id = %s", (user_id,))
+        rows = await cur.fetchall()
+    return [f"{user_id}:{row['id']}" for row in rows]
+
+
+async def delete_user_data(pool: Pool, user_id: str, *, pseudonym: str) -> dict[str, int]:
+    """Apaga conversas, handoffs e feedback do dono; pseudonimiza a auditoria (REQ-SEC-09).
+
+    O FK ``conversations → handoffs`` com ON DELETE CASCADE derruba handoffs automaticamente.
+    Feedback é apagado explicitamente. ``audit_events.actor_id`` recebe o pseudônimo
+    irreversível para preservar trilha de segurança sem reter a identidade.
+    """
+    async with pool.connection() as conn, conn.transaction():
+        del_conv = await conn.execute("DELETE FROM conversations WHERE user_id = %s", (user_id,))
+        del_fb = await conn.execute("DELETE FROM feedback WHERE user_id = %s", (user_id,))
+        pseudo = await conn.execute(
+            "UPDATE audit_events SET actor_id = %s WHERE actor_id = %s",
+            (pseudonym, user_id),
+        )
+    return {
+        "conversations": del_conv.rowcount or 0,
+        "feedback": del_fb.rowcount or 0,
+        "audit_events_pseudonymized": pseudo.rowcount or 0,
+    }
+
+
+async def insert_feedback(
+    pool: Pool,
+    *,
+    user_id: str,
+    trace_id: str,
+    rating: int,
+    comment: str | None,
+) -> None:
+    masked = _scrub(comment) if comment else None
+    async with pool.connection() as conn:
+        await conn.execute(
+            "INSERT INTO feedback (trace_id, user_id, rating, comment) VALUES (%s, %s, %s, %s)",
+            (trace_id, user_id, rating, masked),
+        )

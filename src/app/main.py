@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Response
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.asyncio import Redis
 
-from app.api import chat, conversations, handoffs, health
+from app.api import chat, conversations, handoffs, health, me
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.db.migrate import migrate
@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router)
     app.include_router(conversations.router)
     app.include_router(handoffs.router)
+    app.include_router(me.router)
     return app
 
 

@@ -87,6 +87,8 @@ def fake_llm() -> Iterator[FakeLLM]:
 async def client(
     app: FastAPI, fake_llm: FakeLLM, db_pool: AsyncConnectionPool
 ) -> AsyncIterator[httpx.AsyncClient]:
+    # Zera limites e idempotência entre testes para que a janela fixa não vaze entre casos.
+    await app.state.redis.flushdb()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
