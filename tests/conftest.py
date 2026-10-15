@@ -11,6 +11,8 @@ os.environ.setdefault("JWT_SECRET", secrets.token_hex(32))
 os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("SEED_REFERENCE_DATE", "2026-10-13")
+os.environ.setdefault("METRICS_PORT", "0")  # no exporter thread in tests; read the registry
+os.environ.setdefault("EVAL_SAMPLE_RATE", "0")  # no background judge calls in tests
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402

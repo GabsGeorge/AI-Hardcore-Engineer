@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI, Request, Response
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from prometheus_client import start_http_server
 from redis.asyncio import Redis
 
 from app.api import chat, conversations, handoffs, health, me
@@ -32,7 +33,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await checkpointer.setup()
     app.state.graph = build_graph(checkpointer)
     app.state.redis = Redis.from_url(settings.redis_url)
-    app.state.scheduler_task = await start_scheduler(pool)
+    app.state.scheduler_task = await start_scheduler(pool, app.state.graph)
+    if settings.metrics_port:
+        # Separate port, not published by compose: only Prometheus on the internal network scrapes.
+        start_http_server(settings.metrics_port)
     try:
         yield
     finally:
@@ -65,11 +69,8 @@ def create_app() -> FastAPI:
                 route = request.scope.get("route")
                 path = getattr(route, "path", request.url.path)
                 elapsed = time.perf_counter() - started
-                # /metrics é polado pelo Prometheus — não medimos a si mesmo (evita ruído e
-                # loops de observabilidade).
-                if path != "/metrics":
-                    HTTP_REQUESTS.labels(path, request.method, str(status)).inc()
-                    HTTP_LATENCY.labels(path).observe(elapsed)
+                HTTP_REQUESTS.labels(path, request.method, str(status)).inc()
+                HTTP_LATENCY.labels(path).observe(elapsed)
                 get_logger().info(
                     "request",
                     route=path,

@@ -96,6 +96,18 @@ services:
     depends_on:
       api: { condition: service_started }
 
+  # --- Perfil `eval`: golden set e retrieval com o modelo real (gasta tokens) --------------
+  eval:
+    profiles: ["eval"]
+    build: { context: ., target: runtime }
+    <<: *app-env
+    volumes:
+      - ./evals:/app/evals:ro
+      - models-cache:/home/app/.cache
+    command: ["python", "evals/run_eval.py"]
+    depends_on:
+      api: { condition: service_healthy }
+
 volumes:
   pgdata:
   models-cache:

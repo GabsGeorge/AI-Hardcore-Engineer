@@ -1,5 +1,5 @@
-# Golden set para avaliação offline (REQ-OBS-06, REQ-ORC-01).
-# Cada entrada roda com os LLM fakes; o script evals/run_eval.py exige acurácia de rota >= 95%.
+# Golden set (REQ-OBS-06, REQ-ORC-01). evals/run_eval.py posts each scenario to a running API
+# with the real model and requires route accuracy >= 95%; tests/integration reuse a sample.
 scenarios:
   - id: sc-01-knowledge-antecipacao
     language: pt

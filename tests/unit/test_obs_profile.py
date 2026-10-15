@@ -24,7 +24,7 @@ def test_prometheus_scrape_targets_api() -> None:
     jobs = {job["job_name"]: job for job in config["scrape_configs"]}
     assert "getnet-api" in jobs
     targets = jobs["getnet-api"]["static_configs"][0]["targets"]
-    assert "api:8000" in targets
+    assert "api:9100" in targets  # internal exporter port, not the public API
 
 
 @pytest.mark.req("REQ-OBS-03")

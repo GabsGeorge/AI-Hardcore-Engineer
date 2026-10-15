@@ -26,8 +26,8 @@ A API sobe em `http://localhost:8000`. Healthchecks: `/livez` e `/readyz`.
 ### Gerar tokens de teste
 
 ```bash
-docker compose run --rm api python scripts/issue_token.py cliente1988 merchant
-docker compose run --rm api python scripts/issue_token.py operador01 operator
+docker compose run --rm api python scripts/issue_token.py cliente1988 --role merchant
+docker compose run --rm api python scripts/issue_token.py operador01 --role operator
 ```
 
 ---
@@ -122,7 +122,7 @@ tickets).
 ## Observabilidade
 
 Logs estruturados por request com `trace_id` já estão on. Spans OTel marcam `supervisor.plan`
-com `prompt.version` (sha256[:12] do prompt). Métricas Prometheus em `GET /metrics` cobrem
+com `prompt.version` (sha256[:12] do prompt). Métricas Prometheus na porta interna 9100 (não publicada; só o Prometheus da rede do compose lê) cobrem
 HTTP, rota, tokens, erros de tool, bloqueios de guardrail e handoffs.
 
 ```bash
@@ -144,7 +144,7 @@ erro de tool > 5 %, pico de bloqueios, fila crescendo e circuito do LLM aberto.
 ## Carga
 
 ```bash
-export K6_AUTH_TOKEN=$(docker compose run --rm api python scripts/issue_token.py cliente1988 merchant)
+export K6_AUTH_TOKEN=$(docker compose run --rm api python scripts/issue_token.py cliente1988 --role merchant)
 docker compose --profile load run --rm k6 run /scripts/chat.js
 ```
 
@@ -207,8 +207,8 @@ curl -fsS http://localhost:8000/readyz
 ### 2. Gerar tokens e exportar
 
 ```bash
-export TOKEN_CLIENT=$(docker compose run --rm api python scripts/issue_token.py cliente1988 merchant)
-export TOKEN_OPER=$(docker compose run --rm api python scripts/issue_token.py operador01 operator)
+export TOKEN_CLIENT=$(docker compose run --rm api python scripts/issue_token.py cliente1988 --role merchant)
+export TOKEN_OPER=$(docker compose run --rm api python scripts/issue_token.py operador01 --role operator)
 ```
 
 ### 3. Caminhos felizes (10 cenários — PT/EN)
@@ -292,4 +292,4 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests p
 - [ADR 0009 — Prompts versionados](docs/adr/0009-prompts-versionados.md)
 - [ADR 0010 — FastAPI + OpenAI + DuckDuckGo](docs/adr/0010-fastapi-openai-duckduckgo.md)
 
-Limitações aceitas (`shortcut:` documentados) e trade-offs serão registrados após a Fase 3 (T178).
+Limitações aceitas (`shortcut:` documentados) e trade-offs: [docs/limitations.md](docs/limitations.md).

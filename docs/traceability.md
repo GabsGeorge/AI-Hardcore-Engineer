@@ -36,7 +36,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-OBS-03 | T146, T151, T152, T153 | tests/integration/test_metrics.py, tests/unit/test_obs_profile.py | ✅ |
 | REQ-OBS-04 | T147, T155 | tests/unit/test_online_eval.py | ✅ |
 | REQ-OBS-05 | T148, T156 | tests/contract/test_feedback.py | ✅ |
-| REQ-OBS-06 | T157, T158, T168 | tests/integration/test_golden_scenarios.py | ✅ |
+| REQ-OBS-06 | T157, T158, T168 | tests/integration/test_golden_scenarios.py, tests/unit/test_eval_checks.py | ✅ |
 | REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_golden_scenarios.py, tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py | ✅ |
 | REQ-ORC-02 | T091, T095, T096 | tests/integration/test_graph_parallel.py, tests/integration/test_graph_paths.py | ✅ |
 | REQ-ORC-03 | T092, T095 | tests/integration/test_graph_replan.py | ✅ |
@@ -59,11 +59,11 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
 | REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
-| REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/test_repo_hygiene.py | ✅ |
+| REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/integration/test_metrics.py, tests/test_repo_hygiene.py | ✅ |
 | REQ-SEC-05 | T002, T033, T168 | - | ✅ |
 | REQ-SEC-06 | T104, T110 | tests/integration/test_hitl.py | ✅ |
-| REQ-SEC-07 | T029, T064, T128, T129 | tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
-| REQ-SEC-08 | T136, T142 | tests/security/test_rate_limit.py | ✅ |
+| REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
+| REQ-SEC-08 | T136, T142 | tests/security/test_audit.py, tests/security/test_rate_limit.py | ✅ |
 | REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py, tests/integration/test_sla.py | ✅ |
 | REQ-SUP-01 | T059, T061, T063, T064, T066 | tests/integration/test_support_agent.py, tests/unit/test_support_tools.py | ✅ |
 | REQ-SUP-02 | T058, T062 | tests/unit/test_seed.py | ✅ |

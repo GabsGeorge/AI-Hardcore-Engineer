@@ -1,24 +1,33 @@
-# Perguntas rotuladas com os urls esperados no top-5. Usado por evals/retrieval_compare.py
-# para medir recall@5, MRR e nDCG — densa vs híbrida vs híbrida+rerank (REQ-RAG-04).
+# Questions labelled with the seed pages (src/app/rag/sources.yaml) expected in the top-5.
+# Used by evals/retrieval_compare.py (REQ-RAG-04). Labels are by page topic: re-check them when
+# the seed list changes.
 queries:
   - id: q-01
     text: "Como funciona a antecipação de recebíveis?"
     relevant:
-      - https://www.getnet.com.br/receba/antecipacao
-      - https://www.getnet.com.br/receba/recebiveis
+      - https://site.getnet.com.br/get-ajuda-reserva-financeira/antecipacao-reserva-financeira/
+      - https://site.getnet.com.br/quando-vale-a-pena-antecipar-as-suas-vendas-no-cartao/
   - id: q-02
-    text: "Quais as taxas do Pix?"
+    text: "Como receber Pix na maquininha?"
     relevant:
-      - https://www.getnet.com.br/pix/taxas
+      - https://site.getnet.com.br/pix/
+      - https://site.getnet.com.br/pix-na-maquininha-getnet/
   - id: q-03
-    text: "Como gerar link de pagamento?"
+    text: "Como criar um link de pagamento?"
     relevant:
-      - https://www.getnet.com.br/link-pagamento
+      - https://site.getnet.com.br/link-de-pagamento/
+      - https://site.getnet.com.br/link-de-pagamento-getnet/
   - id: q-04
-    text: "Minha maquininha está com erro E12"
+    text: "Quais maquininhas a Getnet oferece?"
     relevant:
-      - https://www.getnet.com.br/suporte/erros/maquina
+      - https://site.getnet.com.br/todas-as-maquininhas/
+      - https://site.getnet.com.br/maquininha-de-cartao/
   - id: q-05
-    text: "O que é a Get Smart?"
+    text: "Como vender pelo celular sem maquininha?"
     relevant:
-      - https://www.getnet.com.br/maquininhas/get-smart
+      - https://site.getnet.com.br/get-tap/
+      - https://site.getnet.com.br/tap-on-phone-maquininha-no-celular/
+  - id: q-06
+    text: "O que é uma venda desfeita?"
+    relevant:
+      - https://site.getnet.com.br/get-ajuda-gestao-de-vendas/entenda-o-que-e-venda-autorizada-aprovada-e-desfeita/

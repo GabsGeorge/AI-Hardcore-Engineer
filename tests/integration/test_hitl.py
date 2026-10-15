@@ -131,3 +131,66 @@ async def test_handoff_queue_lists_only_awaiting_human(
     assert resp.status_code == 200
     items = resp.json()["items"]
     assert items and all(item["status"] == "awaiting_human" for item in items)
+
+
+@pytest.mark.req("REQ-HITL-01", "REQ-HITL-02")
+async def test_second_escalation_after_resolution_opens_a_new_ticket(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    auth_headers: dict[str, dict[str, str]],
+    operator_headers: dict[str, str],
+) -> None:
+    """Regression: the escalation node used to reuse the closed ticket, so the second request
+    for a human got the old id and the operator's reply bounced with 409."""
+    fake_llm.script(
+        supervisor=[make_plan("escalation"), make_plan("escalation")],
+        escalation=["primeiro", "segundo"],
+    )
+    headers = auth_headers["cliente1988"]
+    first = (await client.post("/v1/chat", json={"message": "humano"}, headers=headers)).json()
+    reply = await client.post(
+        f"/v1/handoffs/{first['handoff']['ticket_id']}/reply",
+        json={"reply": "Resolvido."},
+        headers=operator_headers,
+    )
+    assert reply.status_code == 200
+
+    second = (
+        await client.post(
+            "/v1/chat",
+            json={"message": "humano de novo", "conversation_id": first["conversation_id"]},
+            headers=headers,
+        )
+    ).json()
+    assert second["handoff"]["status"] == "awaiting_human"
+    assert second["handoff"]["ticket_id"] != first["handoff"]["ticket_id"]
+    again = await client.post(
+        f"/v1/handoffs/{second['handoff']['ticket_id']}/reply",
+        json={"reply": "Resolvido de novo."},
+        headers=operator_headers,
+    )
+    assert again.status_code == 200
+
+
+@pytest.mark.req("REQ-HITL-01")
+async def test_sensitive_topic_ticket_has_sensitive_reason(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    db_pool: Pool,
+    auth_headers: dict[str, dict[str, str]],
+) -> None:
+    fake_llm.script(supervisor=[make_plan("support", sensitive=True)], escalation=["contestação"])
+    body = (
+        await client.post(
+            "/v1/chat",
+            json={"message": "minha cliente abriu uma contestação"},
+            headers=auth_headers["cliente1988"],
+        )
+    ).json()
+    async with db_pool.connection() as conn:
+        row = await (
+            await conn.execute(
+                "SELECT reason FROM handoffs WHERE id = %s", (UUID(body["handoff"]["ticket_id"]),)
+            )
+        ).fetchone()
+    assert row is not None and row["reason"] == "sensitive_topic"

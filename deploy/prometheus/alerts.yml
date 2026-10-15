@@ -39,10 +39,3 @@ groups:
           summary: "Fila de handoff crescendo rápido"
           description: "Mais de 5 novos tickets em 15 min; o SLA pode ser violado."
 
-      - alert: CircuitOpenOnLLM
-        expr: increase(getnet_tool_errors_total{tool="llm"}[5m]) > 0
-        for: 2m
-        labels: { severity: page }
-        annotations:
-          summary: "Circuito do LLM provavelmente aberto"
-          description: "Fallback para modelo secundário deve estar ativo; confirmar."

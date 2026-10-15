@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     eval_sample_rate: float = Field(0.10, ge=0, le=1)
     otel_exporter_otlp_endpoint: str = ""
+    metrics_port: int = Field(9100, ge=0)  # internal only; 0 disables the exporter
 
     seed_reference_date: date | None = None
 

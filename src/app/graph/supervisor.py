@@ -80,6 +80,14 @@ async def plan_turn(state: AgentState) -> tuple[PlanModel | None, int]:
 def _dispatch(plan: PlanModel, update: dict[str, Any]) -> Command[Any]:
     if "escalation" in plan.route or plan.sensitive:
         ROUTE_TAKEN.labels("escalation").inc()
+        if plan.sensitive:  # without this the escalation node files it as "human_request"
+            update["escalation"] = {
+                "reason": "sensitive_topic",
+                "status": "awaiting_human",
+                "ticket_id": None,
+                "summary": "",
+                "pending_action": None,
+            }
         return Command(goto="escalation", update=update)
     sends = [
         Send(st.agent, {"subtask": st.model_dump(), "language": plan.language})
