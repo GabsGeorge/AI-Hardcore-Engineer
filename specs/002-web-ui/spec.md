@@ -15,6 +15,20 @@ tokens de acesso saem de um script. Ela cria contas com senha, as telas de cada 
 de sessão que a API ainda não tem, sem mudar a regra de identidade da 001 (o usuário efetivo vem
 sempre do token emitido pelo servidor).
 
+## Clarifications
+
+### Session 2026-10-15
+
+- Q: Como a conta de um lojista autocadastrado é ligada aos dados do estabelecimento? → A: Só o
+  admin vincula, pela tela de admin; o lojista não tem nenhum meio de se vincular sozinho.
+- Q: Excluir os próprios dados apaga só as conversas ou também a conta? → A: Duas ações
+  separadas: "apagar minhas conversas" e "excluir minha conta" (conversas, e-mail, nome e senha,
+  vínculo desfeito, sessões encerradas; auditoria pseudonimizada).
+- Q: Como os e-mails de confirmação, redefinição e convite são entregues? → A: Caixa de entrada
+  local de desenvolvimento no compose (Mailpit); envio real só trocando a configuração SMTP.
+- Q: Quanto dura uma sessão antes de pedir login de novo? → A: 30 min sem uso e no máximo 12 h,
+  igual para todos os perfis.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Lojista cria a conta e entra (Priority: P1)
@@ -134,22 +148,29 @@ histórico completo.
 
 ### User Story 5 - Lojista cuida da própria privacidade e avalia o atendimento (Priority: P2)
 
-O lojista avalia cada resposta com positivo ou negativo e um comentário opcional, e pode excluir
-todos os seus dados de conversa, entendendo antes o que será apagado.
+O lojista avalia cada resposta com positivo ou negativo e um comentário opcional. Pode apagar só
+as conversas, mantendo a conta, ou excluir a conta inteira, entendendo antes o que cada ação
+apaga.
 
 **Why this priority**: a exclusão é obrigação da LGPD (princípio X) e a avaliação alimenta a
 melhoria contínua; ambas já existem na API sem tela.
 
-**Independent Test**: avaliar uma resposta; excluir os dados e confirmar que o histórico ficou
-vazio e que a sessão continua válida.
+**Independent Test**: avaliar uma resposta; apagar as conversas e confirmar que o histórico ficou
+vazio com a sessão ainda válida; excluir a conta e confirmar que o login com aquele e-mail e
+senha não funciona mais.
 
 **Acceptance Scenarios**:
 
 1. **Given** uma resposta, **When** o lojista avalia, **Then** a avaliação é registrada e o
    botão mostra o estado escolhido.
-2. **Given** o pedido de exclusão, **When** o lojista confirma digitando a palavra pedida,
-   **Then** as conversas somem do histórico e a tela informa o que foi apagado e o que foi
-   mantido anonimizado.
+2. **Given** o pedido de apagar as conversas, **When** o lojista confirma digitando a palavra
+   pedida, **Then** as conversas somem do histórico, a sessão continua válida e a tela informa o
+   que foi apagado e o que foi mantido anonimizado.
+3. **Given** o pedido de excluir a conta, **When** o lojista confirma digitando a palavra pedida
+   e a senha atual, **Then** conversas, nome, e-mail e senha são apagados, o vínculo com o
+   estabelecimento é desfeito, todas as sessões terminam e a pessoa volta para a tela inicial.
+4. **Given** uma conta excluída, **When** alguém se cadastra de novo com o mesmo e-mail, **Then**
+   nasce uma conta nova, sem histórico e sem vínculo.
 
 ---
 
@@ -209,6 +230,9 @@ desse estabelecimento.
   papel lojista; operador e admin MUST NOT ser obtidos por autocadastro.
 - **FR-002**: O sistema MUST exigir confirmação de e-mail antes do primeiro acesso, por link de
   uso único que expira em 24 horas, com opção de reenvio.
+- **FR-002a**: Os e-mails (confirmação, redefinição, convite) MUST sair por SMTP configurável;
+  o ambiente local MUST subir junto uma caixa de entrada de desenvolvimento acessível pelo
+  navegador, sem segredo nem conta externa. Falha no envio MUST NOT revelar se a conta existe.
 - **FR-003**: Senhas MUST ter no mínimo 12 caracteres, sem regras de composição, e MUST ser
   recusadas se estiverem numa lista de senhas comuns ou vazadas; MUST ser guardadas apenas como
   hash resistente a força bruta.
@@ -219,7 +243,8 @@ desse estabelecimento.
 - **FR-006**: O sistema MUST oferecer redefinição de senha por link de uso único que expira em
   1 hora; trocar a senha MUST encerrar todas as sessões da conta.
 - **FR-007**: A sessão MUST ser emitida e validada pelo servidor, expirar por inatividade em 30
-  minutos e no máximo em 12 horas, e MUST ser revogável (sair, troca de senha, desativação).
+  minutos e no máximo em 12 horas, com os mesmos prazos para lojista, operador e admin e sem
+  opção de "lembrar de mim", e MUST ser revogável (sair, troca de senha, exclusão, desativação).
 - **FR-008**: As credenciais de sessão MUST ficar fora do alcance de scripts da página e MUST
   ser protegidas contra requisições forjadas de outros sites.
 - **FR-009**: O usuário efetivo de toda ação MUST continuar vindo apenas da sessão validada pelo
@@ -239,8 +264,13 @@ desse estabelecimento.
   MUST ter a mesma resposta de conversa inexistente.
 - **FR-015**: O lojista MUST poder avaliar cada resposta (positivo/negativo, comentário opcional
   de até 1000 caracteres).
-- **FR-016**: O lojista MUST poder excluir os próprios dados de conversa, com confirmação
-  explícita e um resumo do que foi apagado e do que permaneceu anonimizado.
+- **FR-016**: O lojista MUST poder apagar as próprias conversas mantendo a conta, com
+  confirmação explícita e um resumo do que foi apagado e do que permaneceu anonimizado.
+- **FR-016a**: O lojista MUST poder excluir a própria conta, confirmando com a senha atual; a
+  exclusão MUST apagar conversas, nome, e-mail e hash da senha, desfazer o vínculo com o
+  estabelecimento, encerrar todas as sessões e pseudonimizar os eventos de auditoria. Os dados do
+  estabelecimento (que não são da pessoa) MUST permanecer. O e-mail MUST ficar livre para um
+  cadastro novo.
 
 **Operador**
 
@@ -255,8 +285,10 @@ desse estabelecimento.
 
 - **FR-020**: O admin MUST poder criar contas de operador e admin; a pessoa criada MUST definir a
   própria senha por link de uso único.
-- **FR-021**: O admin MUST poder vincular a conta de um lojista a um estabelecimento existente e
-  desvincular; um lojista sem vínculo MUST NOT ter acesso a dados de nenhum estabelecimento.
+- **FR-021**: Só o admin MUST poder vincular a conta de um lojista a um estabelecimento existente
+  e desvincular; a interface do lojista MUST NOT oferecer nenhum meio de autovínculo (nem por
+  CNPJ, nem por código). Um lojista sem vínculo MUST NOT ter acesso a dados de nenhum
+  estabelecimento, e um estabelecimento MUST estar ligado a no máximo uma conta.
 - **FR-022**: O admin MUST poder desativar e reativar contas; uma conta desativada MUST perder
   as sessões abertas.
 - **FR-023**: O admin MUST ver a situação da fila (abertos, fora do prazo, expirados no dia) e
@@ -285,7 +317,8 @@ desse estabelecimento.
 
 - **Conta**: pessoa que usa a interface; nome, e-mail (único, guardado de forma a não aparecer em
   logs), hash da senha, papel (lojista, operador, admin), situação (pendente de confirmação,
-  ativa, bloqueada até, desativada) e, para lojista, o estabelecimento vinculado (opcional).
+  ativa, bloqueada até, desativada) e, para lojista, o estabelecimento vinculado (opcional). A
+  exclusão pelo próprio lojista remove a conta; não há estado "excluída" guardando dados.
 - **Sessão**: acesso ativo de uma conta; criada no login, com expiração por inatividade e
   absoluta, revogável individualmente ou em massa.
 - **Link de uso único**: confirmação de e-mail, redefinição de senha ou definição da primeira
@@ -317,8 +350,8 @@ desse estabelecimento.
 - **Vínculo com estabelecimento**: o autocadastro não liga a conta a nenhum dado de
   estabelecimento; só o admin vincula. Ligar por CNPJ informado pelo próprio usuário daria acesso
   aos dados de terceiros e foi descartado.
-- **E-mail**: não há provedor de e-mail no projeto; no ambiente local os e-mails vão para uma
-  caixa de entrada de desenvolvimento acessível pelo navegador. O envio real fica fora do escopo.
+- **E-mail**: não há provedor de e-mail no projeto; no ambiente local os e-mails vão para a
+  caixa de entrada de desenvolvimento (FR-002a). Configurar um provedor real fica fora do escopo.
 - **Identidade visual**: segue o site público da Getnet (vermelho principal `#EC0000`, textos
   `#282828`, cinzas `#454C52`/`#66707A`/`#E1E6EB`/`#F5F7FA`, cantos de 8 px). A fonte do site
   (Santander/Santander Text) é proprietária e não será embutida; usa-se uma fonte aberta de

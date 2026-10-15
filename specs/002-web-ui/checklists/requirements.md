@@ -34,6 +34,5 @@
 - The stack (React + Vite + TS) appears only in the quoted user input; it belongs to the plan.
 - Brand hex values in Assumptions are brand constraints taken from the public site, not
   implementation choices; the token system itself is defined later in DESIGN.md (Impeccable).
-- Highest-impact defaults to confirm in `/speckit-clarify`: merchant linking only by admin
-  (no self-claim by CNPJ), local dev inbox instead of real e-mail, session timeouts
-  (30 min idle / 12 h absolute).
+- Clarify session 2026-10-15 resolved: admin-only merchant linking, separate "delete
+  conversations" vs "delete account", local dev inbox (SMTP), 30 min idle / 12 h sessions.
