@@ -19,6 +19,7 @@ from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentState
 from app.guardrails.pii import mask
+from app.observability.metrics import GUARDRAIL_BLOCKS
 
 _SAFE_REWRITE: dict[str, str] = {
     "pt": "Não posso prometer essa ação diretamente. Para avaliar o seu caso com segurança, "
@@ -123,8 +124,10 @@ async def output_guardrail(state: AgentState) -> dict[str, Any]:
     flag: Flag
     if blocked:
         flag = "output:blocked"
+        GUARDRAIL_BLOCKS.labels("output", "grounding").inc()
     elif rewritten or pii_found:
         flag = "output:rewritten"
+        GUARDRAIL_BLOCKS.labels("output", "financial_promise" if rewritten else "pii").inc()
     else:
         flag = "output:pass"
 

@@ -386,16 +386,16 @@ Ao final, os contratos ficam **congelados**.
 
 ### Testes primeiro (devem falhar)
 
-- [ ] T145 [P] [US8] Escrever `tests/integration/test_tracing.py`: exporter em memória mostra spans de guardrails, supervisor, especialistas, tools, retrieval e LLM com tokens, custo e `prompt.version` (REQ-OBS-02)
-- [ ] T146 [P] [US8] Escrever `tests/integration/test_metrics.py`: `/metrics` expõe latência por rota, tokens, custo, rota, erros de tool, bloqueios de guardrail e handoffs (REQ-OBS-03)
+- [X] T145 [P] [US8] Escrever `tests/integration/test_tracing.py`: exporter em memória mostra spans de guardrails, supervisor, especialistas, tools, retrieval e LLM com tokens, custo e `prompt.version` (REQ-OBS-02)
+- [X] T146 [P] [US8] Escrever `tests/integration/test_metrics.py`: `/metrics` expõe latência por rota, tokens, custo, rota, erros de tool, bloqueios de guardrail e handoffs (REQ-OBS-03)
 - [ ] T147 [P] [US8] Escrever `tests/unit/test_online_eval.py`: com `EVAL_SAMPLE_RATE = 0.10`, a fração amostrada recebe notas registradas (REQ-OBS-04)
 - [ ] T148 [P] [US8] Escrever `tests/contract/test_feedback.py`: feedback ligado ao `trace_id`; comentário mascarado e ≤ 1.000 caracteres (REQ-OBS-05)
 
 ### Implementação
 
-- [ ] T149 [P] [US8] Implementar `src/app/core/prompts.py`: carga de `prompts/*.md` com `sha256[:12]` exposto como `prompt.version` (ADR 0009)
-- [ ] T150 [US8] Instrumentar nós e tools com spans OTel e `opentelemetry-instrumentation-openai-v2` em `src/app/observability/tracing.py` (REQ-OBS-02)
-- [ ] T151 [P] [US8] Implementar `src/app/observability/metrics.py` e `/metrics` em porta interna (REQ-OBS-03)
+- [X] T149 [P] [US8] Implementar `src/app/core/prompts.py`: carga de `prompts/*.md` com `sha256[:12]` exposto como `prompt.version` (ADR 0009)
+- [X] T150 [US8] Instrumentar nós e tools com spans OTel e `opentelemetry-instrumentation-openai-v2` em `src/app/observability/tracing.py` (REQ-OBS-02)
+- [X] T151 [P] [US8] Implementar `src/app/observability/metrics.py` e `/metrics` em porta interna (REQ-OBS-03)
 - [ ] T152 [P] [US8] Criar `deploy/prometheus/prometheus.yml` e `deploy/prometheus/alerts.yml` (p95 > 8 s por 10 min, custo/hora 2× a média, erro de tool > 5%, pico de bloqueios, fila acima do SLA, faithfulness < 0,8, circuito aberto) (REQ-OBS-03)
 - [ ] T153 [P] [US8] Criar `deploy/grafana/provisioning/` e dashboards operacional, qualidade e custo em `deploy/grafana/dashboards/` (REQ-OBS-03)
 - [ ] T154 [US8] Adicionar ao `docker-compose.yml` o profile `obs` (Langfuse v3 e dependências, Prometheus, Grafana) com OTLP apontando para o Langfuse (REQ-OBS-02, REQ-INF-01)

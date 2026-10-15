@@ -14,6 +14,7 @@ from app.core.config import Settings, get_settings
 from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentResult, AgentState, PlanModel
+from app.observability.metrics import ROUTE_TAKEN, TOKENS
 
 Decision = Literal["synthesize", "replan", "escalate", "degrade"]
 RECENT_MESSAGES = 6
@@ -52,24 +53,40 @@ def _planner_messages(state: AgentState) -> list[BaseMessage]:
 
 
 async def plan_turn(state: AgentState) -> tuple[PlanModel | None, int]:
-    planner = get_model("supervisor").with_structured_output(PlanModel, include_raw=True)
-    try:
-        out = await planner.ainvoke(_planner_messages(state))
-    except Exception:
-        return None, 0
-    usage = getattr(out.get("raw"), "usage_metadata", None) or {}
-    tokens = int(usage.get("total_tokens", 0))
-    parsed = out.get("parsed")
-    return (parsed if isinstance(parsed, PlanModel) else None), tokens
+    """Chama o planner com um span dedicado anotado com a versão do prompt (REQ-OBS-02)."""
+    from app.observability.tracing import get_tracer, set_prompt_version
+
+    with get_tracer().start_as_current_span("supervisor.plan") as span:
+        set_prompt_version(span, "supervisor")
+        planner = get_model("supervisor").with_structured_output(PlanModel, include_raw=True)
+        try:
+            out = await planner.ainvoke(_planner_messages(state))
+        except Exception as exc:
+            span.record_exception(exc)
+            return None, 0
+        usage = getattr(out.get("raw"), "usage_metadata", None) or {}
+        tokens = int(usage.get("total_tokens", 0))
+        if tokens:
+            TOKENS.labels("supervisor").inc(tokens)
+            span.set_attribute("llm.tokens", tokens)
+        parsed = out.get("parsed")
+        if isinstance(parsed, PlanModel):
+            span.set_attribute("plan.route", ",".join(parsed.route))
+            span.set_attribute("plan.language", parsed.language or "")
+            return parsed, tokens
+        return None, tokens
 
 
 def _dispatch(plan: PlanModel, update: dict[str, Any]) -> Command[Any]:
     if "escalation" in plan.route or plan.sensitive:
+        ROUTE_TAKEN.labels("escalation").inc()
         return Command(goto="escalation", update=update)
     sends = [
         Send(st.agent, {"subtask": st.model_dump(), "language": plan.language})
         for st in plan.subtasks
     ]
+    for st in plan.subtasks:
+        ROUTE_TAKEN.labels(st.agent).inc()
     return Command(goto=sends, update=update)
 
 
