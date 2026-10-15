@@ -34,8 +34,8 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-OBS-01 | T011, T025, T026, T032 | tests/unit/test_logging.py | ✅ |
 | REQ-OBS-02 | T145, T150, T154 | tests/integration/test_tracing.py, tests/unit/test_prompt_version.py | ✅ |
 | REQ-OBS-03 | T146, T151, T152, T153 | tests/integration/test_metrics.py, tests/unit/test_obs_profile.py | ✅ |
-| REQ-OBS-04 | T147, T155 | - | ⏳ |
-| REQ-OBS-05 | T148, T156 | - | ⏳ |
+| REQ-OBS-04 | T147, T155 | tests/unit/test_online_eval.py | ⏳ |
+| REQ-OBS-05 | T148, T156 | tests/contract/test_feedback.py | ⏳ |
 | REQ-OBS-06 | T157, T158, T168 | tests/integration/test_golden_scenarios.py | ✅ |
 | REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_golden_scenarios.py, tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py | ✅ |
 | REQ-ORC-02 | T091, T095, T096 | tests/integration/test_graph_parallel.py, tests/integration/test_graph_paths.py | ✅ |
@@ -47,7 +47,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-RAG-01 | T068, T069, T076, T077, T079 | tests/integration/test_ingest.py, tests/unit/test_crawler.py | ✅ |
 | REQ-RAG-02 | T024, T069, T079 | tests/integration/test_ingest.py | ✅ |
 | REQ-RAG-03 | T070, T078 | tests/unit/test_chunking.py | ✅ |
-| REQ-RAG-04 | T071, T080, T159 | tests/integration/test_retriever.py, tests/integration/test_retriever_resilience.py, tests/unit/test_bm25.py, tests/unit/test_rrf.py | ✅ |
+| REQ-RAG-04 | T071, T080, T159 | tests/integration/test_retriever.py, tests/integration/test_retriever_resilience.py, tests/unit/test_bm25.py, tests/unit/test_retrieval_metrics.py, tests/unit/test_rrf.py | ✅ |
 | REQ-RAG-05 | T072, T080 | tests/integration/test_multi_query.py | ✅ |
 | REQ-RAG-06 | T073, T082, T083 | tests/integration/test_knowledge.py | ✅ |
 | REQ-RAG-07 | T073, T080, T083 | tests/integration/test_knowledge.py | ✅ |

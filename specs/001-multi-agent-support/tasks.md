@@ -388,8 +388,8 @@ Ao final, os contratos ficam **congelados**.
 
 - [X] T145 [P] [US8] Escrever `tests/integration/test_tracing.py`: exporter em memória mostra spans de guardrails, supervisor, especialistas, tools, retrieval e LLM com tokens, custo e `prompt.version` (REQ-OBS-02)
 - [X] T146 [P] [US8] Escrever `tests/integration/test_metrics.py`: `/metrics` expõe latência por rota, tokens, custo, rota, erros de tool, bloqueios de guardrail e handoffs (REQ-OBS-03)
-- [ ] T147 [P] [US8] Escrever `tests/unit/test_online_eval.py`: com `EVAL_SAMPLE_RATE = 0.10`, a fração amostrada recebe notas registradas (REQ-OBS-04)
-- [ ] T148 [P] [US8] Escrever `tests/contract/test_feedback.py`: feedback ligado ao `trace_id`; comentário mascarado e ≤ 1.000 caracteres (REQ-OBS-05)
+- [X] T147 [P] [US8] Escrever `tests/unit/test_online_eval.py`: com `EVAL_SAMPLE_RATE = 0.10`, a fração amostrada recebe notas registradas (REQ-OBS-04)
+- [X] T148 [P] [US8] Escrever `tests/contract/test_feedback.py`: feedback ligado ao `trace_id`; comentário mascarado e ≤ 1.000 caracteres (REQ-OBS-05)
 
 ### Implementação
 
@@ -399,11 +399,11 @@ Ao final, os contratos ficam **congelados**.
 - [X] T152 [P] [US8] Criar `deploy/prometheus/prometheus.yml` e `deploy/prometheus/alerts.yml` (p95 > 8 s por 10 min, custo/hora 2× a média, erro de tool > 5%, pico de bloqueios, fila acima do SLA, faithfulness < 0,8, circuito aberto) (REQ-OBS-03)
 - [X] T153 [P] [US8] Criar `deploy/grafana/provisioning/` e dashboards operacional, qualidade e custo em `deploy/grafana/dashboards/` (REQ-OBS-03)
 - [X] T154 [US8] Adicionar ao `docker-compose.yml` o profile `obs` (Langfuse v3 e dependências, Prometheus, Grafana) com OTLP apontando para o Langfuse (REQ-OBS-02, REQ-INF-01)
-- [ ] T155 [US8] Implementar `src/app/ops/online_eval.py`: amostragem assíncrona com LLM-as-judge (faithfulness, relevância) enviando scores ao Langfuse e à métrica (REQ-OBS-04)
-- [ ] T156 [US8] Implementar `POST /v1/feedback` em `src/app/api/me.py` (REQ-OBS-05)
+- [X] T155 [US8] Implementar `src/app/ops/online_eval.py`: amostragem assíncrona com LLM-as-judge (faithfulness, relevância) enviando scores ao Langfuse e à métrica (REQ-OBS-04)
+- [X] T156 [US8] Implementar `POST /v1/feedback` em `src/app/api/me.py` (REQ-OBS-05)
 - [X] T157 [P] [US8] Criar `evals/golden_set.yaml` (10 cenários PT/EN, 8 extras e estendido ≥ 50) e `evals/retrieval_labeled.yaml` (REQ-OBS-06)
 - [X] T158 [US8] Implementar `evals/run_eval.py`: acurácia de rota ≥ 95%, tools esperadas, RAGAS faithfulness ≥ 0,85; sai com código ≠ 0 abaixo das metas (REQ-OBS-06, REQ-ORC-01)
-- [ ] T159 [US8] Implementar `evals/retrieval_compare.py`: densa vs híbrida vs híbrida + rerank com recall@5, MRR e nDCG; recall@5 ≥ 0,90 (REQ-RAG-04)
+- [X] T159 [US8] Implementar `evals/retrieval_compare.py`: densa vs híbrida vs híbrida + rerank com recall@5, MRR e nDCG; recall@5 ≥ 0,90 (REQ-RAG-04)
 
 ## Phase 14: Plataforma transversal (SSE, CI, carga, docs)
 
