@@ -19,6 +19,7 @@ from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentState
 from app.guardrails.pii import mask
+from app.observability.metrics import GUARDRAIL_BLOCKS
 
 Classification = Literal["safe", "injection", "out_of_scope", "sensitive", "human_request"]
 
@@ -119,12 +120,14 @@ async def input_guardrail(state: AgentState) -> dict[str, Any]:
     # Barrier 2: heuristics catch the loudest attacks with no LLM call at all.
     if text and _heuristic_hit(text):
         update["guardrail_flags"] = ["input:blocked"]
+        GUARDRAIL_BLOCKS.labels("input", "heuristic").inc()
         return update
 
     # Barrier 3: structured-output classifier (bounded: one call max).
     classification = await _classify(text) if text else None
     if classification in ("injection", "out_of_scope"):
         update["guardrail_flags"] = ["input:blocked"]
+        GUARDRAIL_BLOCKS.labels("input", classification).inc()
         return update
 
     flags = [mask_flag]

@@ -30,3 +30,11 @@ def get_tracer() -> trace.Tracer:
 
 def current_trace_id() -> str:
     return format(trace.get_current_span().get_span_context().trace_id, "032x")
+
+
+def set_prompt_version(span: trace.Span, prompt_name: str) -> None:
+    """Anota o span com ``prompt.version`` do prompt carregado (REQ-OBS-02, ADR 0009)."""
+    from app.core.prompts import prompt_version
+
+    span.set_attribute("prompt.name", prompt_name)
+    span.set_attribute("prompt.version", prompt_version(prompt_name))

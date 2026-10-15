@@ -32,8 +32,8 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-MEM-02 | T123, T125 | tests/integration/test_memory.py | ✅ |
 | REQ-MEM-03 | T122, T125 | tests/integration/test_memory.py | ✅ |
 | REQ-OBS-01 | T011, T025, T026, T032 | tests/unit/test_logging.py | ✅ |
-| REQ-OBS-02 | T145, T150, T154 | - | ⏳ |
-| REQ-OBS-03 | T146, T151, T152, T153 | - | ⏳ |
+| REQ-OBS-02 | T145, T150, T154 | tests/integration/test_tracing.py, tests/unit/test_prompt_version.py | ⏳ |
+| REQ-OBS-03 | T146, T151, T152, T153 | tests/integration/test_metrics.py | ⏳ |
 | REQ-OBS-04 | T147, T155 | - | ⏳ |
 | REQ-OBS-05 | T148, T156 | - | ⏳ |
 | REQ-OBS-06 | T157, T158, T168 | - | ✅ |

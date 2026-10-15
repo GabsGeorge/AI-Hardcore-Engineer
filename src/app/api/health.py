@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.api.schemas import Readiness
 from app.db.pool import get_pool
@@ -32,3 +33,13 @@ async def readyz(request: Request) -> JSONResponse:
     ready = all(v in {"ok", "empty"} for v in checks.values())
     body = Readiness(status="ready" if ready else "not_ready", checks=checks)
     return JSONResponse(body.model_dump(), status_code=200 if ready else 503)
+
+
+@router.get("/metrics")
+async def metrics() -> Response:
+    """Formato de exposição Prometheus (REQ-OBS-03).
+
+    O endpoint fica junto da API; em produção com perfil ``obs``, o Prometheus faz scrape
+    aqui enquanto o Grafana consome a mesma data source.
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

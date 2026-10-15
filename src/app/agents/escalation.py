@@ -24,6 +24,7 @@ from app.core.prompts import load_prompt
 from app.db import repo
 from app.db.pool import get_pool
 from app.graph.state import AgentState, SubTask
+from app.observability.metrics import HANDOFFS
 from app.tools.escalation_tools import new_ticket_id
 
 _HUMAN_REPLY = {
@@ -94,6 +95,7 @@ async def escalation_node(state: AgentState, config: RunnableConfig) -> dict[str
             sla_minutes=settings.handoff_sla_minutes,
             expiry_hours=settings.handoff_expiry_hours,
         )
+        HANDOFFS.labels(reason).inc()
         # Trilha de escalação (REQ-SEC-07): o target carrega o id do ticket, sem PII.
         await repo.insert_audit_event(
             get_pool(),

@@ -16,6 +16,7 @@ from app.db.migrate import migrate
 from app.db.pool import close_pool, open_pool
 from app.graph.builder import build_graph
 from app.observability.logging import configure_logging, get_logger
+from app.observability.metrics import HTTP_LATENCY, HTTP_REQUESTS
 from app.observability.tracing import configure_tracing, current_trace_id, get_tracer
 from app.ops.scheduler import start as start_scheduler
 
@@ -62,12 +63,19 @@ def create_app() -> FastAPI:
                 return response
             finally:
                 route = request.scope.get("route")
+                path = getattr(route, "path", request.url.path)
+                elapsed = time.perf_counter() - started
+                # /metrics é polado pelo Prometheus — não medimos a si mesmo (evita ruído e
+                # loops de observabilidade).
+                if path != "/metrics":
+                    HTTP_REQUESTS.labels(path, request.method, str(status)).inc()
+                    HTTP_LATENCY.labels(path).observe(elapsed)
                 get_logger().info(
                     "request",
-                    route=getattr(route, "path", request.url.path),
+                    route=path,
                     method=request.method,
                     status=status,
-                    latency_ms=round((time.perf_counter() - started) * 1000),
+                    latency_ms=round(elapsed * 1000),
                 )
                 structlog.contextvars.clear_contextvars()
 

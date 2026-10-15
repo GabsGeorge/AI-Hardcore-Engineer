@@ -10,6 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from app.db import repo
 from app.db.pool import get_pool
 from app.graph.state import AgentName, AgentResult, Source, SubTask, ToolCallRecord
+from app.observability.metrics import TOOL_ERRORS
 from app.tools.interfaces import ALLOWLIST, TIMEOUT_SECONDS, TOOL_INPUTS
 
 ToolImpl = Callable[[Any, RunnableConfig], Awaitable[Any]]
@@ -52,6 +53,8 @@ async def call_tool(
         output, status = None, "error"
     latency = round((time.perf_counter() - started) * 1000)
     await _audit(config, "tool_call", name, "allowed" if status == "ok" else "error")
+    if status != "ok":
+        TOOL_ERRORS.labels(name).inc()
     return output, {"name": name, "status": status, "latency_ms": latency}
 
 
