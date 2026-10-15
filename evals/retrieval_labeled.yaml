@@ -1,0 +1,24 @@
+# Perguntas rotuladas com os urls esperados no top-5. Usado por evals/retrieval_compare.py
+# para medir recall@5, MRR e nDCG — densa vs híbrida vs híbrida+rerank (REQ-RAG-04).
+queries:
+  - id: q-01
+    text: "Como funciona a antecipação de recebíveis?"
+    relevant:
+      - https://www.getnet.com.br/receba/antecipacao
+      - https://www.getnet.com.br/receba/recebiveis
+  - id: q-02
+    text: "Quais as taxas do Pix?"
+    relevant:
+      - https://www.getnet.com.br/pix/taxas
+  - id: q-03
+    text: "Como gerar link de pagamento?"
+    relevant:
+      - https://www.getnet.com.br/link-pagamento
+  - id: q-04
+    text: "Minha maquininha está com erro E12"
+    relevant:
+      - https://www.getnet.com.br/suporte/erros/maquina
+  - id: q-05
+    text: "O que é a Get Smart?"
+    relevant:
+      - https://www.getnet.com.br/maquininhas/get-smart
