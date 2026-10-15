@@ -363,8 +363,8 @@ Ao final, os contratos ficam **congelados**.
 
 ### Testes primeiro (devem falhar)
 
-- [ ] T134 [P] [US9] Escrever `tests/unit/test_resilience.py`: timeouts (LLM 20 s, web 5 s, tools 2 s), retry com jitter, circuito abre após N falhas e responde degradado sem esperar (REQ-REL-01, REQ-REL-03)
-- [ ] T135 [P] [US9] Escrever `tests/integration/test_fallback.py`: modelo principal falhando → resposta pelo fallback (REQ-REL-02)
+- [X] T134 [P] [US9] Escrever `tests/unit/test_resilience.py`: timeouts (LLM 20 s, web 5 s, tools 2 s), retry com jitter, circuito abre após N falhas e responde degradado sem esperar (REQ-REL-01, REQ-REL-03)
+- [X] T135 [P] [US9] Escrever `tests/integration/test_fallback.py`: modelo principal falhando → resposta pelo fallback (REQ-REL-02)
 - [X] T136 [P] [US9] Escrever `tests/security/test_rate_limit.py::test_rate_limit_429`: 31ª requisição no minuto → 429 com `Retry-After` (REQ-SEC-08)
 - [X] T137 [P] [US9] Escrever `tests/contract/test_idempotency.py`: mesma chave e corpo → mesma resposta e uma execução; corpo diferente → 409 `idempotency_conflict` (REQ-API-06)
 - [X] T138 [P] [US9] Escrever `tests/integration/test_lgpd.py::test_delete_my_data` e `::test_retention_purge`: exclusão remove conversas, checkpoints e feedback e pseudonimiza auditoria; expurgo respeita 90 d / 30 d / 1 ano (REQ-SEC-09)
@@ -372,8 +372,8 @@ Ao final, os contratos ficam **congelados**.
 
 ### Implementação
 
-- [ ] T140 [US9] Completar `src/app/core/resilience.py` com circuit breaker async (estado por processo, `shortcut:` documentado) e aplicá-lo a OpenAI, DuckDuckGo e reranker (REQ-REL-01, REQ-REL-03)
-- [ ] T141 [US9] Adicionar fallback de modelo com `with_fallbacks` em `src/app/core/llm.py` (REQ-REL-02)
+- [X] T140 [US9] Completar `src/app/core/resilience.py` com circuit breaker async (estado por processo, `shortcut:` documentado) e aplicá-lo a OpenAI, DuckDuckGo e reranker (REQ-REL-01, REQ-REL-03)
+- [X] T141 [US9] Adicionar fallback de modelo com `with_fallbacks` em `src/app/core/llm.py` (REQ-REL-02)
 - [X] T142 [US9] Implementar `src/app/api/limits.py`: rate limit por janela fixa de 60 s (`shortcut:` documentado) e idempotência `idem:{user}:{key}` por 24 h; aplicar em `src/app/api/chat.py` (REQ-SEC-08, REQ-API-06)
 - [X] T143 [US9] Implementar `src/app/api/me.py`: `DELETE /v1/me/data` com `adelete_thread` e pseudonimização `deleted:<hmac>` (REQ-SEC-09)
 - [ ] T144 [US9] Implementar `src/app/ops/scheduler.py`: tarefa a cada 60 s com `pg_try_advisory_lock` para SLA, expiração e expurgo diário; iniciar no lifespan de `src/app/main.py` (REQ-HITL-05, REQ-SEC-09)

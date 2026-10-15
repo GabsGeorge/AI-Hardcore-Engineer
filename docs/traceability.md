@@ -52,9 +52,9 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-RAG-06 | T073, T082, T083 | tests/integration/test_knowledge.py | ✅ |
 | REQ-RAG-07 | T073, T080, T083 | tests/integration/test_knowledge.py | ✅ |
 | REQ-RAG-08 | T074, T081 | tests/unit/test_web_search.py | ✅ |
-| REQ-REL-01 | T097, T134, T140 | tests/integration/test_retriever_resilience.py, tests/integration/test_support_resilience.py | ✅ |
-| REQ-REL-02 | T135, T141 | - | ⏳ |
-| REQ-REL-03 | T134, T140 | - | ⏳ |
+| REQ-REL-01 | T097, T134, T140 | tests/integration/test_retriever_resilience.py, tests/integration/test_support_resilience.py, tests/unit/test_resilience.py | ✅ |
+| REQ-REL-02 | T135, T141 | tests/unit/test_fallback.py | ⏳ |
+| REQ-REL-03 | T134, T140 | tests/unit/test_resilience.py | ⏳ |
 | REQ-REL-04 | T169, T170 | - | ⏳ |
 | REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
 | REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |

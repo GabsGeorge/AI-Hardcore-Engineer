@@ -14,6 +14,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from app.core.config import get_settings
+from app.core.resilience import CircuitOpen, get_breaker
 from app.observability.logging import get_logger
 from app.rag import retriever
 from app.tools.interfaces import SearchKnowledgeBaseInput, WebResult, WebSearchInput
@@ -66,7 +67,19 @@ async def web_search(args: WebSearchInput, config: RunnableConfig) -> list[WebRe
     if cached:
         return [WebResult.model_validate(r) for r in json.loads(cached)]
 
-    raw = await asyncio.to_thread(ddgs_text, args.query, MAX_WEB_RESULTS)
+    # Circuit breaker: um DuckDuckGo instável abre o circuito e as próximas chamadas falham
+    # rápido (REQ-REL-03). O chamador trata CircuitOpen devolvendo lista vazia (degradado).
+    breaker = get_breaker()
+    try:
+        await breaker.before("duckduckgo")
+    except CircuitOpen:
+        return []
+    try:
+        raw = await asyncio.to_thread(ddgs_text, args.query, MAX_WEB_RESULTS)
+    except Exception:
+        await breaker.record_failure("duckduckgo")
+        raise
+    await breaker.record_success("duckduckgo")
     now = datetime.now(UTC)
     results = [
         WebResult(
