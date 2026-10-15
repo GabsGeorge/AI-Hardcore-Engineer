@@ -1,0 +1,3 @@
+A real favicon (small square PNG) belongs here. For the demonstration, the browser falls
+back to the Getnet logo above. The icon <link> in index.html points to /brand/favicon.png;
+when the real file is placed here, no code change is needed.
