@@ -94,6 +94,17 @@ async def escalation_node(state: AgentState, config: RunnableConfig) -> dict[str
             sla_minutes=settings.handoff_sla_minutes,
             expiry_hours=settings.handoff_expiry_hours,
         )
+        # Trilha de escalação (REQ-SEC-07): o target carrega o id do ticket, sem PII.
+        await repo.insert_audit_event(
+            get_pool(),
+            actor_id=user_id,
+            actor_role="merchant",
+            action="escalated",
+            target=f"ticket:{ticket_id}",
+            outcome="allowed",
+            trace_id=conf.get("trace_id", ""),
+            metadata={"reason": reason},
+        )
 
     # Pause the graph: the API will see this and return handoff.status = awaiting_human.
     resume_value = interrupt({"ticket_id": str(ticket_id), "reason": reason, "summary": summary})

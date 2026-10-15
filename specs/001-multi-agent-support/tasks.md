@@ -339,9 +339,9 @@ Ao final, os contratos ficam **congelados**.
 
 - [ ] T126 [P] Criar `tests/integration/scenarios.py`: roteiros de fake LLM para os 10 cenários (PT/EN) e os 8 extras, reutilizados por integração e contrato (SC-001, ADR 0006)
 - [ ] T127 [P] Escrever `tests/integration/test_golden_scenarios.py`: rota, tools e presença de fontes esperadas nos 18 roteiros (REQ-ORC-01, REQ-API-02)
-- [ ] T128 [P] Escrever `tests/security/test_audit.py`: eventos `auth_failed`, `forbidden_user_mismatch`, `tool_call`, `escalated`, `operator_reply`, `action_approved` com ator, ação, alvo, `trace_id`, horário e sem PII (REQ-SEC-07)
-- [ ] T129 Completar os pontos de auditoria em `src/app/api/auth.py`, `src/app/api/handoffs.py` e `src/app/agents/escalation.py` (REQ-SEC-07)
-- [ ] T130 [P] Adicionar alvo `test-security` no `Makefile` como atalho de `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests tests/security` (suítes IDOR, injeção direta/indireta, PII, papéis, allowlist)
+- [X] T128 [P] Escrever `tests/security/test_audit.py`: eventos `auth_failed`, `forbidden_user_mismatch`, `tool_call`, `escalated`, `operator_reply`, `action_approved` com ator, ação, alvo, `trace_id`, horário e sem PII (REQ-SEC-07)
+- [X] T129 Completar os pontos de auditoria em `src/app/api/auth.py`, `src/app/api/handoffs.py` e `src/app/agents/escalation.py` (REQ-SEC-07)
+- [X] T130 [P] Adicionar alvo `test-security` no `Makefile` como atalho de `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests tests/security` (suítes IDOR, injeção direta/indireta, PII, papéis, allowlist)
 
 ### Fechamento do bloco (Fase 2)
 

@@ -55,6 +55,25 @@ def _trace_id(request: Request) -> str:
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(request: Request, exc: AppError) -> JSONResponse:
+        # Falhas de autenticação deixam trilha (REQ-SEC-07) — não revelamos o motivo ao cliente,
+        # mas registramos para análise forense. O target carrega só a rota, nunca credenciais.
+        if exc.status == 401:
+            import contextlib
+
+            from app.db import repo
+            from app.db.pool import get_pool
+
+            # Auditoria best-effort: nunca pode derrubar a resposta de erro.
+            with contextlib.suppress(Exception):
+                await repo.insert_audit_event(
+                    get_pool(),
+                    actor_id="anonymous",
+                    actor_role="unknown",
+                    action="auth_failed",
+                    target=f"path:{request.url.path}",
+                    outcome="denied",
+                    trace_id=_trace_id(request),
+                )
         return error_response(
             exc.status, exc.code, exc.message, _trace_id(request), exc.details, exc.headers
         )
