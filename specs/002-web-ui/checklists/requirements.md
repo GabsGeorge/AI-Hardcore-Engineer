@@ -38,3 +38,5 @@
   conversations" vs "delete account", local dev inbox (SMTP), 30 min idle / 12 h sessions.
 - Plan phase 2026-10-15 completed: plan.md, research.md, data-model.md, contracts/
   (auth.yaml, me.yaml, admin.yaml, events.md delta) and quickstart.md.
+- Tasks phase 2026-10-15 completed: tasks.md with 105 tasks across 9 phases, each FR mapped
+  to a test task; Impeccable `PRODUCT.md` and `DESIGN.md` gate every feature screen.
