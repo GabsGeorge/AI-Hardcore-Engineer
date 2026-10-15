@@ -119,10 +119,37 @@ tickets).
 
 ---
 
-## Observabilidade (Fase 3)
+## Observabilidade
 
-Logs estruturados por request com `trace_id` já estão on. Spans OTel, métricas Prometheus e
-dashboards Grafana entram pelo profile `obs` do compose (ver tarefas T145–T154).
+Logs estruturados por request com `trace_id` já estão on. Spans OTel marcam `supervisor.plan`
+com `prompt.version` (sha256[:12] do prompt). Métricas Prometheus em `GET /metrics` cobrem
+HTTP, rota, tokens, erros de tool, bloqueios de guardrail e handoffs.
+
+```bash
+docker compose --profile obs up -d       # sobe prometheus (9090) e grafana (3000)
+```
+
+Dashboards provisionados: **Operacional** (p95, QPS, rota, bloqueios), **Qualidade**
+(guardrail por tipo, tokens por papel, handoffs por razão) e **Custo** (tokens totais e por
+papel). Alertas de SLO em `deploy/prometheus/alerts.yml` disparam em p95 > 8 s por 10 min,
+erro de tool > 5 %, pico de bloqueios, fila crescendo e circuito do LLM aberto.
+
+## Streaming (SSE)
+
+- `POST /v1/chat/stream` emite `agent_step` para cada nó, `handoff` quando um ticket abre e
+  `done` com o `ChatResponse` final.
+- `GET /v1/conversations/{id}/events` entrega `handoff_update` e `final_message` ao dono.
+- Contrato completo em [contracts/events.md](contracts/events.md).
+
+## Carga
+
+```bash
+export K6_AUTH_TOKEN=$(docker compose run --rm api python scripts/issue_token.py cliente1988 merchant)
+docker compose --profile load run --rm k6 run /scripts/chat.js
+```
+
+Thresholds de bloqueio: p95 simples < 8 s, composto < 15 s, erros < 1 %. Detalhes em
+[docs/reports/load-test.md](docs/reports/load-test.md).
 
 ---
 

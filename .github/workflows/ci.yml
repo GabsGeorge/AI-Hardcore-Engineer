@@ -40,7 +40,7 @@ jobs:
       - name: no stubs em src/ (constitution V)
         run: |
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
-            run --rm tests pytest tests/test_no_stubs.py
+            run --rm tests pytest tests/test_no_stubs.py tests/test_readme.py
       - name: rastreabilidade REQ → task → teste
         # Fase 3 em andamento: o script é informativo até o fechamento (T168 passa a bloquear
         # na entrega final, quando todos os REQs entregues têm teste associado).
