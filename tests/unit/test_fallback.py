@@ -1,29 +1,34 @@
-"""Fallback de modelo quando o primário falha (REQ-REL-02).
-
-A composição real usa ``primary.with_fallbacks([fallback])`` do LangChain. Este teste
-simula o comportamento com um primário que levanta e um fallback que responde — garantindo
-que ``get_model`` entrega uma cadeia que retoma pelo backup."""
+"""get_model wires the fallback model only when OPENAI_MODEL_FALLBACK is set (REQ-REL-02)."""
 
 from __future__ import annotations
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.runnables import Runnable, RunnableLambda
+from langchain_core.runnables import RunnableWithFallbacks
+from pydantic import SecretStr
+
+from app.core.config import get_settings
+from app.core.llm import get_model
 
 
-class _AlwaysFails(Runnable):  # type: ignore[type-arg]
-    def invoke(self, _input: object, _config: object = None) -> AIMessage:
-        raise RuntimeError("primary down")
-
-    async def ainvoke(self, _input: object, _config: object = None, **_: object) -> AIMessage:
-        raise RuntimeError("primary down")
+@pytest.fixture
+def real_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    s = get_settings()
+    monkeypatch.setattr(s, "openai_api_key", SecretStr("sk-test"))  # build only, no calls
+    monkeypatch.setattr(s, "openai_model_primary", "primary-model")
 
 
 @pytest.mark.req("REQ-REL-02")
-async def test_with_fallbacks_calls_backup_when_primary_raises() -> None:
-    primary = _AlwaysFails()
-    fallback = RunnableLambda(lambda _msgs: AIMessage(content="fallback-reply"))
-    chain = primary.with_fallbacks([fallback])  # type: ignore[arg-type]
-    reply = await chain.ainvoke([HumanMessage(content="oi")])
-    assert isinstance(reply, AIMessage)
-    assert reply.content == "fallback-reply"
+@pytest.mark.usefixtures("real_models")
+def test_fallback_model_is_chained_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "openai_model_fallback", "fallback-model")
+    model = get_model("supervisor")
+    assert isinstance(model, RunnableWithFallbacks)
+    assert model.runnable.model_name == "primary-model"  # type: ignore[attr-defined]
+    assert model.fallbacks[0].model_name == "fallback-model"  # type: ignore[attr-defined]
+
+
+@pytest.mark.req("REQ-REL-02")
+@pytest.mark.usefixtures("real_models")
+def test_no_fallback_chain_without_fallback_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "openai_model_fallback", "")
+    assert not isinstance(get_model("supervisor"), RunnableWithFallbacks)

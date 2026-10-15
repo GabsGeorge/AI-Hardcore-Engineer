@@ -20,12 +20,7 @@ def set_overrides(
 
 
 def get_model(role: str) -> Any:
-    """Chat model for a graph role (supervisor, knowledge, support, synthesize, ...).
-
-    When ``OPENAI_MODEL_FALLBACK`` is configured, the primary model is wrapped with
-    ``.with_fallbacks([fallback])`` (REQ-REL-02): if the primary fails (timeout or server
-    error), LangChain automatically retries the same request on the fallback model.
-    """
+    """Chat model for a graph role; chained to OPENAI_MODEL_FALLBACK when set (REQ-REL-02)."""
     if _model_factory is not None:
         return _model_factory(role)
     s = get_settings()

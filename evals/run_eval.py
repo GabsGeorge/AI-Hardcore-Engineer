@@ -1,55 +1,81 @@
-"""Rodador do golden set (REQ-OBS-06, REQ-ORC-01).
+"""Golden-set eval against a running API with the real model (REQ-OBS-06, REQ-ORC-01).
+Exits 1 when route accuracy < 95%. Tools, handoff and guardrail expectations are reported.
 
-Carrega ``evals/golden_set.yaml`` e verifica:
-
-- **Acurácia de rota** >= 95% (o planner escolhe o(s) nó(s) esperado(s))
-- **Tools esperadas** aparecem em pelo menos uma rodada do cenário
-- **Guardrail de entrada** bloqueia os cenários que exigem ``safe_response``
-
-Sem fontes externas e sem LLM real: aqui o foco é a lógica de orquestração.
-Para avaliar qualidade do texto (RAGAS faithfulness/relevância), ver ``evals/online_eval.py``.
-
-Sai com código != 0 quando qualquer meta é violada.
+    docker compose --profile eval run --rm eval
 """
 
 from __future__ import annotations
 
+import os
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
+import httpx
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
+TARGET_ROUTE_ACCURACY = 0.95
 
 
-def load_scenarios() -> list[dict]:
+def load_scenarios() -> list[dict[str, Any]]:
     data = yaml.safe_load((ROOT / "evals" / "golden_set.yaml").read_text(encoding="utf-8"))
     return list(data["scenarios"])
 
 
-def summarise(scenarios: list[dict]) -> dict[str, int]:
-    """Resumo barato que a CI pode usar sem subir a stack."""
-    by_route: dict[str, int] = {}
-    for s in scenarios:
-        route = ",".join(s["expected"].get("route", []))
-        by_route[route] = by_route.get(route, 0) + 1
-    return by_route
+def check(expected: dict[str, Any], body: dict[str, Any]) -> dict[str, bool]:
+    """One bool per expectation the scenario declares; a missing key is not checked."""
+    route, blocked = set(body["route"]), body["guardrails"]["input"] == "blocked"
+    out: dict[str, bool] = {}
+    if "route" in expected:
+        want = set(expected["route"])
+        out["route"] = blocked if want == {"safe_response"} else want <= route
+    if "tools_contains" in expected:
+        used = {t["name"] for t in body["tools_used"]}
+        out["tools"] = bool(used & set(expected["tools_contains"]))
+    if "handoff" in expected:
+        out["handoff"] = body["handoff"]["status"] == expected["handoff"]
+    if "guardrails_input" in expected:
+        out["guardrails"] = body["guardrails"]["input"] == expected["guardrails_input"]
+    if expected.get("pii_masked"):
+        out["pii"] = body["guardrails"]["input"] == "masked"
+    return out
+
+
+def _post(client: httpx.Client, payload: dict[str, Any]) -> dict[str, Any]:
+    resp = client.post("/v1/chat", json=payload)
+    if resp.status_code == 429:  # the golden set is close to the per-minute limit
+        time.sleep(int(resp.headers.get("Retry-After", "60")))
+        resp = client.post("/v1/chat", json=payload)
+    resp.raise_for_status()
+    return dict(resp.json())
 
 
 def main() -> int:
-    scenarios = load_scenarios()
-    total = len(scenarios)
-    print(f"golden set: {total} cenários")
-    for route, count in sorted(summarise(scenarios).items()):
-        print(f"  {route or '(sem rota)':<40} {count:>2}")
-    if total < 18:
-        print(f"ERRO: esperado ao menos 18 cenários, obtido {total}", file=sys.stderr)
-        return 1
-    required_ids = {"sc-07-explicit-human", "sc-09-injection", "sc-15-idor-attempt"}
-    present = {s["id"] for s in scenarios}
-    missing = required_ids - present
-    if missing:
-        print(f"ERRO: cenários críticos ausentes: {sorted(missing)}", file=sys.stderr)
+    from app.api.auth import create_token
+
+    base_url = os.environ.get("EVAL_BASE_URL", "http://api:8000")
+    token = create_token(os.environ.get("EVAL_USER", "cliente1988"), "merchant")
+    totals: dict[str, list[bool]] = {}
+    with httpx.Client(
+        base_url=base_url, headers={"Authorization": f"Bearer {token}"}, timeout=60
+    ) as client:
+        for sc in load_scenarios():
+            payload: dict[str, Any] = {"message": sc["message"]}
+            if "context_message" in sc:
+                payload["conversation_id"] = _post(client, {"message": sc["context_message"]})[
+                    "conversation_id"
+                ]
+            result = check(sc["expected"], _post(client, payload))
+            for name, ok in result.items():
+                totals.setdefault(name, []).append(ok)
+            print(f"{'PASS' if all(result.values()) else 'FAIL'}  {sc['id']}  {result}")
+    for name, oks in totals.items():
+        print(f"{name:<11} {sum(oks)}/{len(oks)}")
+    accuracy = sum(totals["route"]) / len(totals["route"])
+    if accuracy < TARGET_ROUTE_ACCURACY:
+        print(f"FAIL: route accuracy {accuracy:.0%} < {TARGET_ROUTE_ACCURACY:.0%}", file=sys.stderr)
         return 1
     return 0
 

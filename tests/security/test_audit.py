@@ -146,3 +146,17 @@ async def test_tool_call_is_audited(
         assert ev["target"].startswith("tool:")
         assert ev["trace_id"]
     _assert_no_pii(tools)
+
+
+@pytest.mark.req("REQ-SEC-07", "REQ-SEC-08")
+async def test_auth_failure_audit_rows_are_capped_per_ip(
+    client: httpx.AsyncClient, db_pool: Pool
+) -> None:
+    """Unauthenticated traffic must not write audit rows without bound."""
+    bad = {"Authorization": "Bearer invalid"}
+    for _ in range(35):
+        assert (
+            await client.post("/v1/chat", json={"message": "x"}, headers=bad)
+        ).status_code == 401
+    events = await _fetch_events(db_pool, action="auth_failed")
+    assert len(events) == 30

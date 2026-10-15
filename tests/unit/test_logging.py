@@ -1,9 +1,18 @@
 import json
 import re
+from collections.abc import Iterator
 
 import pytest
 
 from app.observability.logging import configure_logging, get_logger
+
+
+@pytest.fixture(autouse=True)
+def _rebind_logging_after_capsys() -> Iterator[None]:
+    """These tests configure logging onto capsys' stream, which closes at teardown; rebind
+    to the live stdout so later tests never write to a closed file."""
+    yield
+    configure_logging()
 
 
 @pytest.mark.req("REQ-OBS-01", "REQ-GR-02")

@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import httpx
 import pytest
+from fastapi import FastAPI
 
+from app.api.limits import idempotency_get_or_claim
+from app.core.errors import AppError
 from tests.fakes import FakeLLM, make_plan
 from tests.fixtures.kb import fresh_retriever, rewrite  # noqa: F401
 
@@ -45,3 +50,16 @@ async def test_same_key_different_body_returns_409(
     )
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "idempotency_conflict"
+
+
+@pytest.mark.req("REQ-API-06")
+async def test_retry_while_first_request_runs_is_409_not_a_second_run(app: FastAPI) -> None:
+    """Regression: the in-flight claim had response=None, so a concurrent retry ran the graph
+    a second time — exactly what a client that timed out does."""
+    await app.state.redis.flushdb()
+    request = SimpleNamespace(app=app)
+    body = {"message": "oi"}
+    assert await idempotency_get_or_claim(request, "cliente1988", "k-1", body) is None  # type: ignore[arg-type]
+    with pytest.raises(AppError) as exc:
+        await idempotency_get_or_claim(request, "cliente1988", "k-1", body)  # type: ignore[arg-type]
+    assert exc.value.code == "idempotency_in_progress"

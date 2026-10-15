@@ -18,6 +18,7 @@ from app.core.errors import AppError, forbidden
 from app.db import repo
 from app.db.pool import get_pool
 from app.guardrails.pii import mask
+from app.ops.online_eval import schedule_score_turn
 
 router = APIRouter()
 
@@ -90,6 +91,53 @@ def build_response(state: dict[str, Any], conversation_id: UUID, trace_id: str) 
     )
 
 
+async def _reject_foreign_user_id(body: ChatRequest, user: CurrentUser, trace_id: str) -> None:
+    """403 + audit for a payload user_id that differs from the JWT subject (REQ-SEC-07)."""
+    if body.user_id is None or body.user_id == user.id:
+        return
+    await repo.insert_audit_event(
+        get_pool(),
+        actor_id=user.id,
+        actor_role=user.role,
+        action="forbidden_user_mismatch",
+        target=f"user:{body.user_id}",
+        outcome="denied",
+        trace_id=trace_id,
+    )
+    raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
+
+
+async def _reflect_open_handoff(
+    state: dict[str, Any], user_id: str, conversation_id: UUID
+) -> dict[str, Any] | None:
+    """interrupt() pauses the run before `escalation` reaches the state; read it from the DB."""
+    row = await repo.get_latest_handoff_for_conversation(get_pool(), user_id, conversation_id)
+    if row is None or row["status"] != "awaiting_human":
+        return None
+    state["escalation"] = {
+        "reason": row["reason"],
+        "status": "awaiting_human",
+        "ticket_id": str(row["id"]),
+        "summary": row["summary"],
+        "pending_action": row.get("pending_action"),
+    }
+    return row
+
+
+def _graph_or_503(request: Request) -> Any:
+    graph = request.app.state.graph
+    if graph is None:
+        raise AppError(503, "service_unavailable", "Agents are not available yet.")
+    return graph
+
+
+def _schedule_eval(message: str, response: ChatResponse) -> None:
+    if response.guardrails.input == "blocked":
+        return
+    sources = "\n".join(f"- [{s.kind}] {s.title} — {s.url}" for s in response.sources)
+    schedule_score_turn(mask(message)[0], response.response, sources, response.trace_id)
+
+
 @router.post("/v1/chat", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
@@ -98,48 +146,27 @@ async def chat(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> ChatResponse:
     trace_id: str = request.state.trace_id
-    pool = get_pool()
-    if body.user_id is not None and body.user_id != user.id:
-        await repo.insert_audit_event(
-            pool,
-            actor_id=user.id,
-            actor_role=user.role,
-            action="forbidden_user_mismatch",
-            target=f"user:{body.user_id}",
-            outcome="denied",
-            trace_id=trace_id,
-        )
-        raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
-
+    await _reject_foreign_user_id(body, user, trace_id)
     await check_rate_limit(request, user.id)
     body_dict = body.model_dump(mode="json", exclude_none=True)
     cached = await idempotency_get_or_claim(request, user.id, idempotency_key, body_dict)
     if cached is not None:
         return ChatResponse.model_validate(cached)
 
-    graph = request.app.state.graph
-    if graph is None:
-        raise AppError(503, "service_unavailable", "Agents are not available yet.")
-    conversation_id = await repo.get_or_create_conversation(pool, user.id, body.conversation_id)
+    graph = _graph_or_503(request)
+    conversation_id = await repo.get_or_create_conversation(
+        get_pool(), user.id, body.conversation_id
+    )
     state = await graph.ainvoke(
         turn_input(body.message), config=graph_config(user.id, conversation_id, trace_id, user.role)
     )
-    # An interrupt() in the escalation node pauses the graph without writing `escalation` to
-    # the state. Reflect the open handoff in the response so the merchant sees `awaiting_human`.
     if state.get("__interrupt__"):
-        row = await repo.get_latest_handoff_for_conversation(pool, user.id, conversation_id)
-        if row is not None:
-            state["escalation"] = {
-                "reason": row["reason"],
-                "status": "awaiting_human",
-                "ticket_id": str(row["id"]),
-                "summary": row["summary"],
-                "pending_action": row.get("pending_action"),
-            }
+        await _reflect_open_handoff(state, user.id, conversation_id)
     response = build_response(state, conversation_id, trace_id)
     await idempotency_store(
         request, user.id, idempotency_key, body_dict, response.model_dump(mode="json")
     )
+    _schedule_eval(body.message, response)
     return response
 
 
@@ -147,51 +174,38 @@ async def chat(
 async def chat_stream(
     body: ChatRequest, request: Request, user: CurrentUser = Depends(current_user)
 ) -> EventSourceResponse:
-    """Mesma lógica de ``/v1/chat`` mas transmite eventos SSE (REQ-API-07, contracts/events.md).
-
-    Eventos: ``agent_step`` para cada nó entrando em execução; ``handoff`` quando um ticket
-    abre; ``done`` carrega o ``ChatResponse`` final. Guardrails continuam sendo barreira dura.
-    """
+    """SSE variant of /v1/chat: agent_step per node, handoff, then done (contracts/events.md)."""
     trace_id: str = request.state.trace_id
-    pool = get_pool()
-    if body.user_id is not None and body.user_id != user.id:
-        raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
+    await _reject_foreign_user_id(body, user, trace_id)
     await check_rate_limit(request, user.id)
-    graph = request.app.state.graph
-    if graph is None:
-        raise AppError(503, "service_unavailable", "Agents are not available yet.")
-    conversation_id = await repo.get_or_create_conversation(pool, user.id, body.conversation_id)
+    graph = _graph_or_503(request)
+    conversation_id = await repo.get_or_create_conversation(
+        get_pool(), user.id, body.conversation_id
+    )
     config = graph_config(user.id, conversation_id, trace_id, user.role)
 
     async def _generator() -> Any:
-        state: dict[str, Any] = {}
-        seen_nodes: set[str] = set()
+        seen: set[str] = set()
         async for chunk in graph.astream(
             turn_input(body.message), config=config, stream_mode="updates"
         ):
-            # chunk é {node_name: node_update}; emitimos agent_step uma vez por nó.
-            for node, update in chunk.items():
-                if node not in seen_nodes:
-                    seen_nodes.add(node)
+            for node in chunk:
+                if node not in seen:
+                    seen.add(node)
                     yield {"event": "agent_step", "data": json.dumps({"node": node})}
-                if isinstance(update, dict):
-                    # Vai acumulando o estado "visível" para construir o done final.
-                    state.update(update)
-        # Reflete interrupt do mesmo jeito que /v1/chat.
-        row = await repo.get_latest_handoff_for_conversation(pool, user.id, conversation_id)
-        if row is not None and row["status"] == "awaiting_human":
-            state["escalation"] = {
-                "reason": row["reason"],
-                "status": "awaiting_human",
-                "ticket_id": str(row["id"]),
-                "summary": row["summary"],
-                "pending_action": row.get("pending_action"),
-            }
-            yield {
-                "event": "handoff",
-                "data": json.dumps({"status": "awaiting_human", "ticket_id": str(row["id"])}),
-            }
+        # Read the reduced state from the checkpoint: stream updates are per-node deltas and
+        # merging them by hand would drop the accumulated results/route of earlier nodes.
+        snapshot = await graph.aget_state(config)
+        state = dict(snapshot.values)
+        if any(task.interrupts for task in snapshot.tasks):
+            row = await _reflect_open_handoff(state, user.id, conversation_id)
+            if row is not None:
+                yield {
+                    "event": "handoff",
+                    "data": json.dumps({"status": "awaiting_human", "ticket_id": str(row["id"])}),
+                }
         response = build_response(state, conversation_id, trace_id)
+        _schedule_eval(body.message, response)
         yield {"event": "done", "data": json.dumps(response.model_dump(mode="json"))}
 
     return EventSourceResponse(_generator())

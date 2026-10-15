@@ -41,13 +41,26 @@ async def reply(
         raise AppError(409, "ticket_closed", "Ticket already resolved or expired.")
     if row.get("pending_action") and body.action_decision is None:
         raise AppError(422, "validation_error", "action_decision is required for this ticket.")
-    resolved = await repo.resolve_handoff(
-        get_pool(),
-        ticket_id=ticket_id,
-        operator_id=user.id,
-        reply=body.reply,
-        action_decision=body.action_decision,
+    graph = request.app.state.graph
+    if graph is None:
+        raise AppError(503, "service_unavailable", "Agents are not available yet.")
+
+    # Resume BEFORE closing the ticket: the escalation node re-runs from the top and must still
+    # see it open. The resumed turn acts as the ticket OWNER, never the operator (ADR 0005).
+    await graph.ainvoke(
+        Command(resume={"reply": body.reply, "action_decision": body.action_decision}),
+        config=graph_config(row["user_id"], row["conversation_id"], request.state.trace_id),
     )
+    try:
+        await repo.resolve_handoff(
+            get_pool(),
+            ticket_id=ticket_id,
+            operator_id=user.id,
+            reply=body.reply,
+            action_decision=body.action_decision,
+        )
+    except AppError as exc:  # another operator closed it between our check and now
+        raise AppError(409, "ticket_closed", "Ticket already resolved or expired.") from exc
     # Dois eventos distintos quando houve ação pendente: operator_reply + action_<decision>.
     # O target carrega só o ticket; o reply e params não são copiados para auditoria.
     await repo.insert_audit_event(
@@ -69,21 +82,6 @@ async def reply(
             outcome="allowed",
             trace_id=request.state.trace_id,
         )
-
-    # Resume the paused graph on the SAME thread, with the TICKET OWNER's identity (ADR 0005):
-    # the operator may have a different user_id, but the resumed turn must act for the merchant.
-    owner_config = graph_config(
-        resolved["user_id"],
-        resolved["conversation_id"],
-        request.state.trace_id,
-    )
-    graph = request.app.state.graph
-    if graph is None:
-        raise AppError(503, "service_unavailable", "Agents are not available yet.")
-    await graph.ainvoke(
-        Command(resume={"reply": body.reply, "action_decision": body.action_decision}),
-        config=owner_config,
-    )
 
     updated = await repo.get_handoff(get_pool(), ticket_id)
     if updated is None:  # unreachable: just resolved — defensive

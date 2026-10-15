@@ -9,10 +9,13 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import httpx
 import pytest
+from fastapi import FastAPI
 
 from app.db.pool import Pool
 from app.ops.scheduler import run_tick
+from tests.fakes import FakeLLM, make_plan
 
 
 async def _open_ticket(db_pool: Pool, user_id: str = "cliente1988") -> tuple[str, str]:
@@ -98,3 +101,69 @@ async def test_retention_sweep_removes_old_conversations_and_audit(db_pool: Pool
     result = await run_tick(db_pool, with_retention=True)
     assert result["retention"]["conversations"] >= 1
     assert result["retention"]["audit_events"] >= 1
+
+
+async def _escalate(client: httpx.AsyncClient, fake_llm: FakeLLM, headers: dict[str, str]) -> dict:
+    fake_llm.script(supervisor=[make_plan("escalation")], escalation=["pede humano"])
+    resp = await client.post("/v1/chat", json={"message": "quero um humano"}, headers=headers)
+    return dict(resp.json())
+
+
+async def _checkpoint_rows(db_pool: Pool, thread_id: str) -> int:
+    async with db_pool.connection() as conn:
+        row = await (
+            await conn.execute(
+                "SELECT count(*)::int AS n FROM checkpoints WHERE thread_id = %s", (thread_id,)
+            )
+        ).fetchone()
+    return int(row["n"]) if row else 0
+
+
+@pytest.mark.req("REQ-HITL-05")
+async def test_expired_ticket_ends_the_paused_run_with_a_final_message(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    db_pool: Pool,
+    app: FastAPI,
+    auth_headers: dict[str, dict[str, str]],
+) -> None:
+    headers = auth_headers["cliente1988"]
+    first = await _escalate(client, fake_llm, headers)
+    async with db_pool.connection() as conn:
+        await conn.execute(
+            "UPDATE handoffs SET expires_at = now() - interval '1 min' WHERE id = %s",
+            (first["handoff"]["ticket_id"],),
+        )
+    assert (await run_tick(db_pool, app.state.graph, with_retention=False))["expired"] == 1
+
+    conv = (
+        await client.get(f"/v1/conversations/{first['conversation_id']}", headers=headers)
+    ).json()
+    assert any("encerrado" in m["content"] for m in conv["messages"] if m["role"] == "assistant")
+    async with db_pool.connection() as conn:
+        row = await (
+            await conn.execute(
+                "SELECT status FROM handoffs WHERE id = %s", (first["handoff"]["ticket_id"],)
+            )
+        ).fetchone()
+    assert row is not None and row["status"] == "expired"
+
+
+@pytest.mark.req("REQ-SEC-09")
+async def test_retention_sweep_also_purges_checkpointed_messages(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    db_pool: Pool,
+    auth_headers: dict[str, dict[str, str]],
+) -> None:
+    """Regression: purging the conversation row left the full text in LangGraph checkpoints."""
+    first = await _escalate(client, fake_llm, auth_headers["cliente1988"])
+    thread_id = f"cliente1988:{first['conversation_id']}"
+    assert await _checkpoint_rows(db_pool, thread_id) > 0
+    async with db_pool.connection() as conn:
+        await conn.execute(
+            "UPDATE conversations SET last_activity_at = now() - interval '200 days' WHERE id = %s",
+            (first["conversation_id"],),
+        )
+    await run_tick(db_pool, with_retention=True)
+    assert await _checkpoint_rows(db_pool, thread_id) == 0

@@ -1,5 +1,7 @@
 """Typed errors rendered as the `Error` schema of contracts/openapi.yaml."""
 
+import contextlib
+import time
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -52,28 +54,43 @@ def _trace_id(request: Request) -> str:
     return getattr(request.state, "trace_id", "")
 
 
+_AUTH_AUDIT_PER_IP_PER_MIN = 30
+
+
+async def _audit_auth_failure(request: Request) -> None:
+    """Audit 401s (REQ-SEC-07) without letting unauthenticated traffic write rows unbounded:
+    every failure is counted, but only the first N per client IP per minute become rows."""
+    from app.db import repo
+    from app.db.pool import get_pool
+    from app.observability.metrics import AUTH_FAILURES
+
+    AUTH_FAILURES.inc()
+    ip = request.client.host if request.client else "unknown"
+    key = f"rl401:{ip}:{int(time.time() // 60)}"
+    # Best-effort: a Redis or DB hiccup must not turn the 401 into a 500.
+    with contextlib.suppress(Exception):
+        redis = request.app.state.redis
+        attempts = await redis.incr(key)
+        if attempts == 1:
+            await redis.expire(key, 65)
+        if attempts > _AUTH_AUDIT_PER_IP_PER_MIN:
+            return
+        await repo.insert_audit_event(
+            get_pool(),
+            actor_id="anonymous",
+            actor_role="unknown",
+            action="auth_failed",
+            target=f"path:{request.url.path}",
+            outcome="denied",
+            trace_id=_trace_id(request),
+        )
+
+
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(request: Request, exc: AppError) -> JSONResponse:
-        # Falhas de autenticação deixam trilha (REQ-SEC-07) — não revelamos o motivo ao cliente,
-        # mas registramos para análise forense. O target carrega só a rota, nunca credenciais.
         if exc.status == 401:
-            import contextlib
-
-            from app.db import repo
-            from app.db.pool import get_pool
-
-            # Auditoria best-effort: nunca pode derrubar a resposta de erro.
-            with contextlib.suppress(Exception):
-                await repo.insert_audit_event(
-                    get_pool(),
-                    actor_id="anonymous",
-                    actor_role="unknown",
-                    action="auth_failed",
-                    target=f"path:{request.url.path}",
-                    outcome="denied",
-                    trace_id=_trace_id(request),
-                )
+            await _audit_auth_failure(request)
         return error_response(
             exc.status, exc.code, exc.message, _trace_id(request), exc.details, exc.headers
         )

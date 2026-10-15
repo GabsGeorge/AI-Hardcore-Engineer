@@ -54,3 +54,27 @@ async def test_delete_my_data_removes_conversations_and_pseudonymizes_audit(
         )
         row = await cur.fetchone()
         assert row and row["n"] >= 1
+
+
+@pytest.mark.req("REQ-SEC-09")
+@pytest.mark.usefixtures("fresh_retriever")
+async def test_delete_my_data_removes_checkpointed_messages(
+    client: httpx.AsyncClient,
+    fake_llm: FakeLLM,
+    db_pool: Pool,
+    auth_headers: dict[str, dict[str, str]],
+) -> None:
+    fake_llm.script(supervisor=[make_plan("knowledge")], knowledge_rewrite=[rewrite()])
+    headers = auth_headers["cliente1988"]
+    conv_id = (await client.post("/v1/chat", json={"message": "oi"}, headers=headers)).json()[
+        "conversation_id"
+    ]
+    assert (await client.delete("/v1/me/data", headers=headers)).status_code == 200
+    async with db_pool.connection() as conn:
+        row = await (
+            await conn.execute(
+                "SELECT count(*)::int AS n FROM checkpoints WHERE thread_id = %s",
+                (f"cliente1988:{conv_id}",),
+            )
+        ).fetchone()
+    assert row is not None and row["n"] == 0
