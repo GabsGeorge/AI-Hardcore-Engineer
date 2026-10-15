@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 39,
+  "title": "Getnet - Operacional",
+  "uid": "getnet-op",
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "p95 latência /v1/chat",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(getnet_http_request_duration_seconds_bucket{route=\"/v1/chat\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "QPS por status",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(getnet_http_requests_total[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "piechart",
+      "title": "Rota tomada pelo supervisor",
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+      "targets": [
+        { "expr": "sum by (node) (increase(getnet_route_total[1h]))", "legendFormat": "{{node}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Handoffs abertos (1 h)",
+      "gridPos": { "x": 8, "y": 8, "w": 8, "h": 4 },
+      "targets": [
+        { "expr": "sum(increase(getnet_handoffs_total[1h]))", "legendFormat": "handoffs" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Bloqueios de guardrail (1 h)",
+      "gridPos": { "x": 8, "y": 12, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum by (stage) (increase(getnet_guardrail_blocks_total[1h]))",
+          "legendFormat": "{{stage}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Erros de tool (por tool)",
+      "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+      "targets": [
+        { "expr": "sum by (tool) (rate(getnet_tool_errors_total[5m]))", "legendFormat": "{{tool}}" }
+      ]
+    }
+  ]
+}

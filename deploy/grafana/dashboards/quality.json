@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 39,
+  "title": "Getnet - Qualidade",
+  "uid": "getnet-quality",
+  "editable": true,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Bloqueios de guardrail por tipo",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (kind) (rate(getnet_guardrail_blocks_total[5m]))",
+          "legendFormat": "{{kind}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Tokens por papel (média móvel)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (role) (rate(getnet_tokens_total[5m]))", "legendFormat": "{{role}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Handoffs resolvidos / expirados",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (reason) (increase(getnet_handoffs_total[24h]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    }
+  ]
+}
