@@ -2,12 +2,14 @@
 → owned conversation (404) → graph. The message is PII-masked here, before it reaches the graph
 state, so raw PII is never persisted in checkpoints (constitution X)."""
 
+import json
 from typing import Any, get_args
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Request
 from langchain_core.messages import HumanMessage
 from langgraph.types import Overwrite
+from sse_starlette.sse import EventSourceResponse
 
 from app.api.auth import CurrentUser, current_user
 from app.api.limits import check_rate_limit, idempotency_get_or_claim, idempotency_store
@@ -139,3 +141,57 @@ async def chat(
         request, user.id, idempotency_key, body_dict, response.model_dump(mode="json")
     )
     return response
+
+
+@router.post("/v1/chat/stream")
+async def chat_stream(
+    body: ChatRequest, request: Request, user: CurrentUser = Depends(current_user)
+) -> EventSourceResponse:
+    """Mesma lógica de ``/v1/chat`` mas transmite eventos SSE (REQ-API-07, contracts/events.md).
+
+    Eventos: ``agent_step`` para cada nó entrando em execução; ``handoff`` quando um ticket
+    abre; ``done`` carrega o ``ChatResponse`` final. Guardrails continuam sendo barreira dura.
+    """
+    trace_id: str = request.state.trace_id
+    pool = get_pool()
+    if body.user_id is not None and body.user_id != user.id:
+        raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
+    await check_rate_limit(request, user.id)
+    graph = request.app.state.graph
+    if graph is None:
+        raise AppError(503, "service_unavailable", "Agents are not available yet.")
+    conversation_id = await repo.get_or_create_conversation(pool, user.id, body.conversation_id)
+    config = graph_config(user.id, conversation_id, trace_id, user.role)
+
+    async def _generator() -> Any:
+        state: dict[str, Any] = {}
+        seen_nodes: set[str] = set()
+        async for chunk in graph.astream(
+            turn_input(body.message), config=config, stream_mode="updates"
+        ):
+            # chunk é {node_name: node_update}; emitimos agent_step uma vez por nó.
+            for node, update in chunk.items():
+                if node not in seen_nodes:
+                    seen_nodes.add(node)
+                    yield {"event": "agent_step", "data": json.dumps({"node": node})}
+                if isinstance(update, dict):
+                    # Vai acumulando o estado "visível" para construir o done final.
+                    state.update(update)
+        # Reflete interrupt do mesmo jeito que /v1/chat.
+        row = await repo.get_latest_handoff_for_conversation(pool, user.id, conversation_id)
+        if row is not None and row["status"] == "awaiting_human":
+            state["escalation"] = {
+                "reason": row["reason"],
+                "status": "awaiting_human",
+                "ticket_id": str(row["id"]),
+                "summary": row["summary"],
+                "pending_action": row.get("pending_action"),
+            }
+            yield {
+                "event": "handoff",
+                "data": json.dumps({"status": "awaiting_human", "ticket_id": str(row["id"])}),
+            }
+        response = build_response(state, conversation_id, trace_id)
+        yield {"event": "done", "data": json.dumps(response.model_dump(mode="json"))}
+
+    return EventSourceResponse(_generator())

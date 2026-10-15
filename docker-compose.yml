@@ -82,6 +82,20 @@ services:
     depends_on:
       prometheus: { condition: service_started }
 
+  # --- Perfil `load`: carga sintética com k6 -----------------------------------------------
+  k6:
+    profiles: ["load"]
+    image: grafana/k6:latest
+    environment:
+      BASE_URL: http://api:8000
+      AUTH_TOKEN: ${K6_AUTH_TOKEN:-}
+    volumes:
+      - ./deploy/k6:/scripts:ro
+    entrypoint: ["k6"]
+    command: ["run", "/scripts/chat.js"]
+    depends_on:
+      api: { condition: service_started }
+
 volumes:
   pgdata:
   models-cache:

@@ -10,7 +10,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |
 | REQ-API-05 | T105, T112 | tests/integration/test_hitl.py | ✅ |
 | REQ-API-06 | T137, T142 | tests/contract/test_idempotency.py | ✅ |
-| REQ-API-07 | T160, T166 | - | ⏳ |
+| REQ-API-07 | T160, T166 | tests/contract/test_stream.py | ⏳ |
 | REQ-GR-01 | T114, T119, T121 | tests/security/test_injection_direct.py, tests/security/test_injection_identity.py | ✅ |
 | REQ-GR-02 | T010, T011, T022, T025, T039, T050, T053, T085 | tests/integration/test_chat_flow.py, tests/integration/test_graph_topology.py, tests/security/test_pii.py, tests/security/test_security_idor.py, tests/unit/test_logging.py, tests/unit/test_pii.py | ✅ |
 | REQ-GR-03 | T116, T119 | tests/integration/test_out_of_scope.py | ✅ |

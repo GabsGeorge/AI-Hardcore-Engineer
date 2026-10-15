@@ -1,10 +1,13 @@
 """Owner reads their conversation and the final message after a human reply (REQ-API-05)."""
 
+import asyncio
+import json
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
 from langchain_core.messages import AIMessage, HumanMessage
+from sse_starlette.sse import EventSourceResponse
 
 from app.api.auth import CurrentUser, current_user
 from app.api.chat import graph_config
@@ -54,3 +57,51 @@ async def _last_activity(user_id: str, conversation_id: UUID) -> Any:
     if row is None:
         raise not_found()
     return row["last_activity_at"]
+
+
+@router.get("/v1/conversations/{conversation_id}/events")
+async def conversation_events(
+    conversation_id: UUID, request: Request, user: CurrentUser = Depends(current_user)
+) -> EventSourceResponse:
+    """Canal SSE push para o dono: handoff_update e final_message (REQ-API-07)."""
+    # Dono só: para terceiros devolvemos 404 antes de abrir o canal.
+    row = await repo.get_conversation_handoff(get_pool(), user.id, conversation_id)
+    if row is None:
+        raise not_found()
+
+    async def _generator() -> Any:
+        last_status: str | None = row.get("handoff_status")
+        last_ai_count = 0
+        for _ in range(60):  # até 60 ciclos de 1 s — cliente pode reabrir
+            await asyncio.sleep(1)
+            info = await repo.get_conversation_handoff(get_pool(), user.id, conversation_id)
+            if info is None:
+                return
+            current_status = info.get("handoff_status")
+            if current_status != last_status:
+                last_status = current_status
+                yield {
+                    "event": "handoff_update",
+                    "data": json.dumps(
+                        {"status": current_status or "none", "ticket_id": info.get("ticket_id")}
+                    ),
+                }
+            graph = request.app.state.graph
+            if graph is None:
+                continue
+            try:
+                state = await graph.aget_state(
+                    graph_config(user.id, conversation_id, request.state.trace_id)
+                )
+            except Exception:  # noqa: BLE001, S112 — leitura best-effort; cliente reconecta
+                continue
+            messages = (state.values or {}).get("messages") or []
+            ai_messages = [m for m in messages if isinstance(m, AIMessage)]
+            if len(ai_messages) > last_ai_count and ai_messages:
+                last_ai_count = len(ai_messages)
+                yield {
+                    "event": "final_message",
+                    "data": json.dumps({"content": str(ai_messages[-1].content)}),
+                }
+
+    return EventSourceResponse(_generator())
