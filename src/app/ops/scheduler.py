@@ -76,7 +76,28 @@ async def _retention_sweep(conn: Any) -> dict[str, int]:
             "DELETE FROM audit_events WHERE ts < now() - make_interval(days => %s)",
             (settings.retention_audit_days,),
         )
-    return {"conversations": len(gone), "audit_events": aud.rowcount or 0}
+        # Feature 002: drop stale authentication artefacts so the DB stays clean. The 7-day
+        # grace window is longer than the longest one-time token (24 h) so a developer can
+        # still reproduce "expired link" errors.
+        tokens = await conn.execute(
+            "DELETE FROM auth_one_time_tokens"
+            " WHERE used_at IS NOT NULL OR expires_at < now() - interval '7 days'"
+        )
+        revoked = await conn.execute(
+            "DELETE FROM auth_sessions"
+            " WHERE revoked_at IS NOT NULL AND revoked_at < now() - interval '7 days'"
+        )
+        attempts = await conn.execute(
+            "DELETE FROM auth_login_attempts WHERE ts < now() - make_interval(days => %s)",
+            (settings.retention_log_days,),
+        )
+    return {
+        "conversations": len(gone),
+        "audit_events": aud.rowcount or 0,
+        "auth_tokens": tokens.rowcount or 0,
+        "auth_sessions": revoked.rowcount or 0,
+        "auth_login_attempts": attempts.rowcount or 0,
+    }
 
 
 async def run_tick(

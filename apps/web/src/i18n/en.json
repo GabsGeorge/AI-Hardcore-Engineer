@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "Getnet Support",
+    "signOut": "Sign out",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "chat": "Chat",
+    "history": "History",
+    "queue": "Queue",
+    "admin": "Admin",
+    "privacy": "Privacy"
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signInSubtitle": "Use your e-mail and password to continue.",
+    "email": "E-mail",
+    "password": "Password",
+    "signIn": "Sign in",
+    "forgot": "Forgot your password",
+    "register": "Create account",
+    "createAccountTitle": "Create account",
+    "name": "Name",
+    "createAccount": "Create account",
+    "confirmSentTitle": "Check your inbox",
+    "confirmSentBody": "If the e-mail is registered, we sent a confirmation link.",
+    "verifyTitle": "Confirming your e-mail",
+    "verifyOk": "E-mail confirmed. Sign in to begin.",
+    "verifyFail": "The link is not valid or has expired. Request a new one on the sign-in page.",
+    "errors": {
+      "generic": "Could not continue. Please try again.",
+      "credentials": "Invalid credentials.",
+      "locked": "Too many attempts. Try again in {{seconds}}s.",
+      "rateLimited": "Too many requests. Try again in {{seconds}}s.",
+      "weakPassword": "Password must be at least 12 characters and not one of the most used."
+    }
+  },
+  "accessDenied": {
+    "title": "Access denied",
+    "body": "You don't have permission to open this page."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The address you opened does not exist."
+  }
+}

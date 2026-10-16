@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "Atendimento Getnet",
+    "signOut": "Sair",
+    "loading": "Carregando…"
+  },
+  "nav": {
+    "chat": "Conversar",
+    "history": "Histórico",
+    "queue": "Fila",
+    "admin": "Administração",
+    "privacy": "Privacidade"
+  },
+  "auth": {
+    "signInTitle": "Entrar",
+    "signInSubtitle": "Use seu e-mail e sua senha para continuar.",
+    "email": "E-mail",
+    "password": "Senha",
+    "signIn": "Entrar",
+    "forgot": "Esqueci minha senha",
+    "register": "Criar conta",
+    "createAccountTitle": "Criar conta",
+    "name": "Nome",
+    "createAccount": "Criar conta",
+    "confirmSentTitle": "Verifique sua caixa de entrada",
+    "confirmSentBody": "Se o e-mail estiver cadastrado, enviamos um link para confirmar.",
+    "verifyTitle": "Confirmando seu e-mail",
+    "verifyOk": "E-mail confirmado. Entre para começar.",
+    "verifyFail": "O link não é válido ou expirou. Peça um novo pela tela de login.",
+    "errors": {
+      "generic": "Não foi possível continuar. Tente novamente.",
+      "credentials": "Credenciais inválidas.",
+      "locked": "Muitas tentativas. Tente novamente em {{seconds}}s.",
+      "rateLimited": "Muitas requisições. Tente novamente em {{seconds}}s.",
+      "weakPassword": "A senha precisa ter pelo menos 12 caracteres e não estar entre as mais usadas."
+    }
+  },
+  "accessDenied": {
+    "title": "Acesso negado",
+    "body": "Você não tem permissão para abrir esta página."
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "body": "O endereço que você abriu não existe."
+  }
+}
