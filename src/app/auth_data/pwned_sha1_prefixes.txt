@@ -1,0 +1,6 @@
+# Top SHA-1 prefixes (10 chars) of pwned passwords. Replace in build via scripts/fetch-pwned-top.py.
+# These first entries cover "password", "123456", "qwerty".
+5BAA61E4C9
+7C4A8D09CA
+B1B3773A05
+E6B6AFBD6D
