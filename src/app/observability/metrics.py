@@ -21,3 +21,11 @@ GUARDRAIL_BLOCKS = Counter(
 )
 HANDOFFS = Counter("getnet_handoffs_total", "Handoffs opened.", labelnames=("reason",))
 AUTH_FAILURES = Counter("getnet_auth_failures_total", "Requests rejected with 401.")
+AUTH_LOGIN = Counter("getnet_auth_login_total", "Login outcomes.", labelnames=("outcome",))
+AUTH_EMAIL_SENT = Counter(
+    "getnet_auth_email_sent_total", "Transactional e-mails sent.", labelnames=("kind",)
+)
+AUTH_EMAIL_ERRORS = Counter(
+    "getnet_auth_email_errors_total", "Transactional e-mail errors.", labelnames=("kind",)
+)
+SESSIONS_ACTIVE = Counter("getnet_auth_sessions_opened_total", "Sessions opened via login.")

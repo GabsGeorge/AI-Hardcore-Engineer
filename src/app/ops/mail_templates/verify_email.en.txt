@@ -1,0 +1,9 @@
+Hi,
+
+Your Getnet Support account is almost ready. To start, confirm your e-mail at the link below (valid for 24 hours):
+
+{{link}}
+
+If you did not create this account, you can safely ignore this message.
+
+Getnet Support

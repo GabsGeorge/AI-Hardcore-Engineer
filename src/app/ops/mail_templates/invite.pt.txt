@@ -1,0 +1,7 @@
+Olá, {{display_name}},
+
+Você foi convidado para o Atendimento Getnet como {{role}}. Para começar, defina sua senha no link abaixo (válido por 24 horas):
+
+{{link}}
+
+Atendimento Getnet
