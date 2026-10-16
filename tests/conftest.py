@@ -15,6 +15,7 @@ os.environ.setdefault("METRICS_PORT", "0")  # no exporter thread in tests; read 
 os.environ.setdefault("EVAL_SAMPLE_RATE", "0")  # no background judge calls in tests
 os.environ.setdefault("SESSION_SECRET", secrets.token_hex(32))
 os.environ.setdefault("PASSWORD_PEPPER", secrets.token_hex(32))
+os.environ.setdefault("SMTP_URL", "smtp://mailpit:1025")  # mocked in unit tests
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402

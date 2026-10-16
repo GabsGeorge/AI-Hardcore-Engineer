@@ -1,0 +1,9 @@
+Olá,
+
+Sua conta no Atendimento Getnet está quase pronta. Para começar a usar, confirme seu e-mail no link abaixo (válido por 24 horas):
+
+{{link}}
+
+Se você não criou essa conta, pode ignorar esta mensagem — ninguém sabe quem você é por aqui.
+
+Atendimento Getnet

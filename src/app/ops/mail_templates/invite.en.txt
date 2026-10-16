@@ -1,0 +1,7 @@
+Hi {{display_name}},
+
+You were invited to join Getnet Support as {{role}}. Set your password at the link below to begin (valid for 24 hours):
+
+{{link}}
+
+Getnet Support
