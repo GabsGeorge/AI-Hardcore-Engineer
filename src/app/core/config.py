@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     jwt_issuer: str = "getnet-support"
     jwt_audience: str = "getnet-support-api"
 
+    # Feature 002 web UI. Session cookies use session_secret; password hashing uses the pepper.
+    # SMTP points at Mailpit in dev; set a real provider URL in production.
+    session_secret: SecretStr | None = None
+    password_pepper: SecretStr | None = None
+    smtp_url: str = ""
+    web_base_url: str = "http://localhost"
+    admin_seed_email: str = "admin@getnet.local"
+    admin_seed_password: SecretStr | None = None
+
     database_url: str
     redis_url: str
 

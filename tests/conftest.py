@@ -13,6 +13,8 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("SEED_REFERENCE_DATE", "2026-10-13")
 os.environ.setdefault("METRICS_PORT", "0")  # no exporter thread in tests; read the registry
 os.environ.setdefault("EVAL_SAMPLE_RATE", "0")  # no background judge calls in tests
+os.environ.setdefault("SESSION_SECRET", secrets.token_hex(32))
+os.environ.setdefault("PASSWORD_PEPPER", secrets.token_hex(32))
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402
@@ -33,6 +35,11 @@ TEST_USERS = [
 
 # Order matters only for readability; TRUNCATE ... CASCADE handles dependencies.
 APP_TABLES = [
+    "auth_login_attempts",
+    "auth_one_time_tokens",
+    "auth_sessions",
+    "auth_credentials",
+    "auth_accounts",
     "audit_events",
     "feedback",
     "handoffs",
