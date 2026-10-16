@@ -80,7 +80,6 @@ export function RegisterPage() {
             <Input
               id={input}
               autoComplete="name"
-              autoFocus
               value={body.display_name}
               onChange={(e) => set("display_name", e.target.value)}
             />

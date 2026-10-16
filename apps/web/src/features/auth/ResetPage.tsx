@@ -64,7 +64,6 @@ export function ResetPage() {
             <PasswordInput
               id={input}
               autoComplete="new-password"
-              autoFocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               invalid={weak}
