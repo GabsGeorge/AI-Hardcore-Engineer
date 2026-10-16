@@ -53,21 +53,24 @@ services:
   # Shared Node image: install once, mount the source, reuse for lint / unit / E2E.
   # The three services below fall back to `npm install` when package-lock.json is absent
   # (first bootstrap). The CI commits a lockfile and `npm ci` runs after that.
+  # web-lint and web-tests use the default bridge network because npm install needs the public
+  # registry; the Playwright E2E (web-e2e) stays on testnet because at that point the SPA is
+  # already built into the web image and no external download is needed.
   web-lint:
     image: node:22.11.0-alpine
     working_dir: /app
     volumes:
       - ./apps/web:/app
-    networks: [testnet]
-    command: ["sh", "-c", "[ -f package-lock.json ] && npm ci || npm install --no-audit --no-fund; npm run lint"]
+    # The combined "sh -c" below is written so a failed `npm run lint` propagates its non-zero
+    # exit; otherwise ESLint errors would be masked as success by the install step.
+    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; npm run lint"]
 
   web-tests:
     image: node:22.11.0-alpine
     working_dir: /app
     volumes:
       - ./apps/web:/app
-    networks: [testnet]
-    command: ["sh", "-c", "[ -f package-lock.json ] && npm ci || npm install --no-audit --no-fund; npm run test"]
+    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; npm run test"]
 
   web-e2e:
     image: mcr.microsoft.com/playwright:v1.49.0-jammy
