@@ -61,16 +61,17 @@ services:
     working_dir: /app
     volumes:
       - ./apps/web:/app
-    # The combined "sh -c" below is written so a failed `npm run lint` propagates its non-zero
-    # exit; otherwise ESLint errors would be masked as success by the install step.
-    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; npm run lint"]
+    # `exec npm run lint` replaces the shell as PID 1 so the container's exit code is the
+    # exact one npm returns; the previous `; npm run lint` chain let docker surface 0 even
+    # when ESLint failed.
+    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; exec npm run lint"]
 
   web-tests:
     image: node:22.11.0-alpine
     working_dir: /app
     volumes:
       - ./apps/web:/app
-    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; npm run test"]
+    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; exec npm run test"]
 
   web-e2e:
     image: mcr.microsoft.com/playwright:v1.49.0-jammy
