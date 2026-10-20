@@ -1,12 +1,13 @@
-"""Owner data deletion (LGPD, REQ-SEC-09) and feedback (REQ-OBS-05)."""
+"""Owner data deletion (LGPD, REQ-SEC-09), feedback (REQ-OBS-05) and conversation list (US2)."""
 
 from __future__ import annotations
 
 import hashlib
 import hmac
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel
 
 from app.api.auth import CurrentUser, current_user
 from app.api.schemas import FeedbackRequest
@@ -15,6 +16,47 @@ from app.db import repo
 from app.db.pool import get_pool
 
 router = APIRouter()
+
+
+class ConversationSummary(BaseModel):
+    id: str
+    started_at: str
+    last_activity_at: str
+    handoff_status: Literal["none", "awaiting_human", "resolved", "expired"]
+    last_message_preview: str
+
+
+class ConversationList(BaseModel):
+    items: list[ConversationSummary]
+    next_cursor: str | None = None
+
+
+@router.get("/v1/me/conversations", response_model=ConversationList)
+async def my_conversations(
+    user: CurrentUser = Depends(current_user),
+    limit: int = Query(default=20, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+) -> ConversationList:
+    """List the merchant's conversations, newest first. Operator/admin see nothing here."""
+    if user.role != "merchant":
+        return ConversationList(items=[])
+    items = await repo.list_user_conversations(
+        get_pool(), user_id=user.id, limit=limit, cursor=cursor
+    )
+    next_cursor = items[-1].last_activity_at if len(items) == limit else None
+    return ConversationList(
+        items=[
+            ConversationSummary(
+                id=str(it.id),
+                started_at=it.started_at,
+                last_activity_at=it.last_activity_at,
+                handoff_status=it.handoff_status,
+                last_message_preview=it.last_message_preview,
+            )
+            for it in items
+        ],
+        next_cursor=next_cursor,
+    )
 
 
 def _pseudonymize(user_id: str) -> str:

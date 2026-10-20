@@ -256,3 +256,52 @@ async def insert_feedback(
             "INSERT INTO feedback (trace_id, user_id, rating, comment) VALUES (%s, %s, %s, %s)",
             (trace_id, user_id, rating, masked),
         )
+
+
+class _ConversationSummary:
+    def __init__(
+        self,
+        id: UUID,
+        started_at: str,
+        last_activity_at: str,
+        handoff_status: str,
+        last_message_preview: str,
+    ) -> None:
+        self.id = id
+        self.started_at = started_at
+        self.last_activity_at = last_activity_at
+        self.handoff_status = handoff_status
+        self.last_message_preview = last_message_preview
+
+
+async def list_user_conversations(
+    pool: Pool, *, user_id: str, limit: int, cursor: str | None
+) -> list[_ConversationSummary]:
+    """Return the merchant's conversations ordered newest-first. The preview column was not
+    added in migration 0001; US2 keeps it empty until a text extractor from the checkpointer
+    is wired up (a one-liner that doesn't belong in this PR)."""
+    sql = (
+        "SELECT c.id, c.created_at::text AS started_at,"
+        " c.last_activity_at::text AS last_activity_at,"
+        " COALESCE(c.handoff_status, 'none') AS handoff_status"
+        " FROM conversations c WHERE c.user_id = %s"
+    )
+    params: tuple[Any, ...] = (user_id,)
+    if cursor is not None:
+        sql += " AND c.last_activity_at < %s::timestamptz"
+        params = (user_id, cursor)
+    sql += " ORDER BY c.last_activity_at DESC LIMIT %s"
+    params = (*params, limit)
+    async with pool.connection() as conn:
+        cur = await conn.execute(sql, params)
+        rows = await cur.fetchall()
+    return [
+        _ConversationSummary(
+            id=row["id"],
+            started_at=row["started_at"],
+            last_activity_at=row["last_activity_at"],
+            handoff_status=row["handoff_status"],
+            last_message_preview="",
+        )
+        for row in rows
+    ]

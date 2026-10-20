@@ -39,6 +39,24 @@
       "weakPassword": "A senha precisa ter pelo menos 12 caracteres e não estar entre as mais usadas."
     }
   },
+  "chat": {
+    "inputLabel": "Mensagem",
+    "inputPlaceholder": "Pergunte sobre taxas, maquininha, Pix, antecipação…",
+    "send": "Enviar",
+    "thinking": "Pensando…",
+    "sources": "Fontes",
+    "rateLimited": "Muitas mensagens em um minuto. Aguarde um instante antes de enviar de novo.",
+    "handoff": {
+      "waitingTitle": "Aguardando atendente",
+      "waitingBody": "Seu pedido entrou na fila com o número {{ticket}}.",
+      "slaTitle": "O atendimento está demorando",
+      "slaBody": "Já encaminhamos para prioridade alta; assim que um atendente responder, você verá aqui.",
+      "resolvedTitle": "Respondido",
+      "resolvedBody": "Um atendente respondeu seu chamado.",
+      "expiredTitle": "Atendimento encerrado",
+      "expiredBody": "Não conseguimos atender a tempo. Se ainda precisar, envie uma nova mensagem."
+    }
+  },
   "accessDenied": {
     "title": "Acesso negado",
     "body": "Você não tem permissão para abrir esta página."
