@@ -38,7 +38,7 @@ export function QueuePage() {
             <button
               type="button"
               onClick={() => navigate(`/queue/${item.ticket_id}`)}
-              className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-support rounded-md"
+              className="w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-support"
             >
               <Card>
                 <div className="flex items-center justify-between gap-3">
@@ -59,7 +59,7 @@ export function QueuePage() {
                   </div>
                   <SlaCountdown slaDueAt={item.sla_due_at} />
                 </div>
-                <p className="mt-2 text-body text-ink-700 line-clamp-2">{item.summary}</p>
+                <p className="mt-2 line-clamp-2 text-body text-ink-700">{item.summary}</p>
               </Card>
             </button>
           </li>
