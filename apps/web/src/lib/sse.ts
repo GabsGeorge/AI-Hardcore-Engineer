@@ -56,11 +56,7 @@ export async function streamPost(
   await readLoop(response.body.getReader(), handlers, signal);
 }
 
-export function openGetStream(
-  path: string,
-  handlers: SseHandlers,
-  signal: AbortSignal,
-): void {
+export function openGetStream(path: string, handlers: SseHandlers, signal: AbortSignal): void {
   const seen = new Set<string>();
   const source = new EventSource(path, { withCredentials: true });
   let attempts = 0;

@@ -19,8 +19,7 @@ const bySize: Record<Size, string> = {
 
 const byIntent: Record<Intent, string> = {
   primary: "bg-brand text-surface-100 hover:bg-brand-hover active:bg-brand-pressed",
-  secondary:
-    "border border-line bg-surface-100 text-ink-700 hover:bg-surface-200 active:bg-line",
+  secondary: "border border-line bg-surface-100 text-ink-700 hover:bg-surface-200 active:bg-line",
   ghost: "bg-transparent text-ink-700 hover:bg-surface-200 active:bg-line",
 };
 

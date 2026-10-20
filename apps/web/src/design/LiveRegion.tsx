@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 type Announce = (message: string, politeness?: "polite" | "assertive") => void;
 
@@ -27,11 +35,14 @@ export function LiveRegion({ children }: { children: ReactNode }) {
     }, 4000);
   }, []);
 
-  useEffect(() => () => {
-    if (timeout.current !== null) {
-      window.clearTimeout(timeout.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (timeout.current !== null) {
+        window.clearTimeout(timeout.current);
+      }
+    },
+    [],
+  );
 
   return (
     <LiveContext.Provider value={announce}>

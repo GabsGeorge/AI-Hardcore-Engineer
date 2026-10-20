@@ -4,10 +4,10 @@ import { cn } from "./cn";
 type Tone = "info" | "success" | "warning" | "danger";
 
 const tones: Record<Tone, { bg: string; text: string; role: "status" | "alert" }> = {
-  info:    { bg: "bg-surface-200", text: "text-ink-700", role: "status" },
+  info: { bg: "bg-surface-200", text: "text-ink-700", role: "status" },
   success: { bg: "bg-state-success/10", text: "text-state-success", role: "status" },
   warning: { bg: "bg-state-warning/10", text: "text-state-warning", role: "status" },
-  danger:  { bg: "bg-brand-soft", text: "text-state-danger", role: "alert" },
+  danger: { bg: "bg-brand-soft", text: "text-state-danger", role: "alert" },
 };
 
 export function Alert({

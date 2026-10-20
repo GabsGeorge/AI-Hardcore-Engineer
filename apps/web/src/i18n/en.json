@@ -57,6 +57,40 @@
       "expiredBody": "We couldn't attend in time. If you still need help, send a new message."
     }
   },
+  "queue": {
+    "title": "Handoff queue",
+    "emptyTitle": "Nothing here",
+    "emptyBody": "No tickets waiting for an agent.",
+    "priorityHigh": "High priority",
+    "priorityNormal": "Normal",
+    "slaBreached": "SLA breached",
+    "timeRemaining": "{{minutes}} minutes",
+    "reason": {
+      "human_request": "Merchant request",
+      "sensitive_topic": "Sensitive topic",
+      "low_confidence": "Low confidence",
+      "repeated_failures": "Repeated failures",
+      "side_effect_action": "Side-effect action"
+    }
+  },
+  "ticket": {
+    "title": "Ticket detail",
+    "loading": "Open the ticket from the queue to load its context.",
+    "summary": "Summary",
+    "context": "Context",
+    "pendingAction": "Pending action",
+    "pendingActionBody": "The merchant asked for an action that needs operator approval: {{type}}.",
+    "decisionLegend": "Pending action decision",
+    "approve": "Approve",
+    "reject": "Reject",
+    "missingDecision": "Choose approve or reject before sending.",
+    "replyLabel": "Reply to the merchant",
+    "replyPlaceholder": "Explain what was done or the next step",
+    "send": "Send reply",
+    "sent": "Reply sent.",
+    "alreadyClosed": "This ticket has already been closed.",
+    "sendError": "Could not send. Try again."
+  },
   "accessDenied": {
     "title": "Access denied",
     "body": "You don't have permission to open this page."

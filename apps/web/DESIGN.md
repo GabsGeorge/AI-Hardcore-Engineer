@@ -32,23 +32,23 @@ tables mirror the exported values.
 A 7-step neutral ramp plus two accents (brand and support). Each token documents the one
 job it has.
 
-| Token          | Hex       | Job                                                       |
-|----------------|-----------|-----------------------------------------------------------|
-| `color.brand`             | `#EC0000` | Primary action, selected tab, destructive confirmation.  |
-| `color.brand.hover`       | `#D00000` | Hover of a brand element.                                 |
-| `color.brand.pressed`     | `#B40000` | Pressed state.                                            |
-| `color.brand.soft`        | `#FBE4E4` | Tag or badge background to signal brand state.           |
-| `color.support`           | `#005CB9` | Informational accent (links, info banners). Rare.         |
-| `color.ink.900`           | `#111318` | Headings.                                                 |
-| `color.ink.700`           | `#282828` | Body text.                                                |
-| `color.ink.500`           | `#454C52` | Secondary text, labels.                                   |
-| `color.ink.400`           | `#66707A` | Captions, timestamps.                                     |
-| `color.surface.100`       | `#FFFFFF` | Page background.                                          |
-| `color.surface.200`       | `#F5F7FA` | Card background, resting input.                           |
-| `color.surface.300`       | `#E1E6EB` | Divider, muted button.                                    |
-| `color.state.success`     | `#117A2B` | "resolved" status.                                        |
-| `color.state.warning`     | `#B45309` | "awaiting_human" and SLA warnings.                        |
-| `color.state.danger`      | `#B40000` | Error banner, "expired" status.                           |
+| Token                 | Hex       | Job                                                     |
+| --------------------- | --------- | ------------------------------------------------------- |
+| `color.brand`         | `#EC0000` | Primary action, selected tab, destructive confirmation. |
+| `color.brand.hover`   | `#D00000` | Hover of a brand element.                               |
+| `color.brand.pressed` | `#B40000` | Pressed state.                                          |
+| `color.brand.soft`    | `#FBE4E4` | Tag or badge background to signal brand state.          |
+| `color.support`       | `#005CB9` | Informational accent (links, info banners). Rare.       |
+| `color.ink.900`       | `#111318` | Headings.                                               |
+| `color.ink.700`       | `#282828` | Body text.                                              |
+| `color.ink.500`       | `#454C52` | Secondary text, labels.                                 |
+| `color.ink.400`       | `#66707A` | Captions, timestamps.                                   |
+| `color.surface.100`   | `#FFFFFF` | Page background.                                        |
+| `color.surface.200`   | `#F5F7FA` | Card background, resting input.                         |
+| `color.surface.300`   | `#E1E6EB` | Divider, muted button.                                  |
+| `color.state.success` | `#117A2B` | "resolved" status.                                      |
+| `color.state.warning` | `#B45309` | "awaiting_human" and SLA warnings.                      |
+| `color.state.danger`  | `#B40000` | Error banner, "expired" status.                         |
 
 Dark mode is intentionally **not** shipped in this release. The chat is a working
 surface; a theme switch is a distraction without a confirmed user demand (recorded under
@@ -58,12 +58,12 @@ surface; a theme switch is a distraction without a confirmed user demand (record
 
 Inter, with the native stack as fallback. Four roles cover every screen:
 
-| Role          | Size (px) | Line  | Weight | Used for                                |
-|---------------|-----------|-------|--------|-----------------------------------------|
-| `display`     | 28        | 36    | 700    | Page title (login, admin landings).     |
-| `heading`     | 20        | 28    | 600    | Section header, dialog title.           |
-| `body`        | 15        | 24    | 400    | Default running text, chat messages.    |
-| `label`       | 13        | 20    | 500    | Form labels, badge text, timestamps.    |
+| Role      | Size (px) | Line | Weight | Used for                             |
+| --------- | --------- | ---- | ------ | ------------------------------------ |
+| `display` | 28        | 36   | 700    | Page title (login, admin landings).  |
+| `heading` | 20        | 28   | 600    | Section header, dialog title.        |
+| `body`    | 15        | 24   | 400    | Default running text, chat messages. |
+| `label`   | 13        | 20   | 500    | Form labels, badge text, timestamps. |
 
 Tabular numbers are enabled by default in `label` so queue timers and prices do not jitter.
 
@@ -72,23 +72,23 @@ Tabular numbers are enabled by default in `label` so queue timers and prices do 
 A single 4 px step, exposed as `space.1` through `space.10`. Component spec never mixes
 scales; `space.3` (12 px) is the base gutter and `space.4` (16 px) is the default stack rhythm.
 
-| Token | px | Where it shows up                                         |
-|-------|----|-----------------------------------------------------------|
-| `space.1` | 4  | Icon ↔ text inside a button.                          |
-| `space.2` | 8  | Gap between adjacent form controls.                    |
-| `space.3` | 12 | Gutter inside cards and dialogs.                       |
-| `space.4` | 16 | Default stack rhythm (vertical gap between blocks).    |
-| `space.6` | 24 | Section rhythm.                                        |
-| `space.8` | 32 | Page gutters on mobile.                                |
-| `space.10`| 40 | Page gutters on desktop.                               |
+| Token      | px  | Where it shows up                                   |
+| ---------- | --- | --------------------------------------------------- |
+| `space.1`  | 4   | Icon ↔ text inside a button.                       |
+| `space.2`  | 8   | Gap between adjacent form controls.                 |
+| `space.3`  | 12  | Gutter inside cards and dialogs.                    |
+| `space.4`  | 16  | Default stack rhythm (vertical gap between blocks). |
+| `space.6`  | 24  | Section rhythm.                                     |
+| `space.8`  | 32  | Page gutters on mobile.                             |
+| `space.10` | 40  | Page gutters on desktop.                            |
 
 ### Radius
 
-| Token | px | Jobs                                                        |
-|-------|----|-------------------------------------------------------------|
-| `radius.sm` | 4  | Inline tags, keyboard chips.                           |
-| `radius.md` | 8  | **Default**. Buttons, inputs, cards, dialogs.          |
-| `radius.lg` | 12 | Chat bubbles.                                          |
+| Token       | px  | Jobs                                          |
+| ----------- | --- | --------------------------------------------- |
+| `radius.sm` | 4   | Inline tags, keyboard chips.                  |
+| `radius.md` | 8   | **Default**. Buttons, inputs, cards, dialogs. |
+| `radius.lg` | 12  | Chat bubbles.                                 |
 
 ### Elevation
 

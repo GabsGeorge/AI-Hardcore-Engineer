@@ -11,7 +11,11 @@ export async function clearInbox(): Promise<void> {
   await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
 }
 
-export async function waitForLink(to: string, pattern: RegExp, timeoutMs = 10_000): Promise<string> {
+export async function waitForLink(
+  to: string,
+  pattern: RegExp,
+  timeoutMs = 10_000,
+): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const list = (await (await fetch(`${MAILPIT}/api/v1/messages`)).json()) as {
@@ -19,9 +23,10 @@ export async function waitForLink(to: string, pattern: RegExp, timeoutMs = 10_00
     };
     const match = list.messages.find((m) => m.To.some((r) => r.Address === to));
     if (match !== undefined) {
-      const body = (await (
-        await fetch(`${MAILPIT}/api/v1/message/${match.ID}`)
-      ).json()) as { Text: string; HTML: string };
+      const body = (await (await fetch(`${MAILPIT}/api/v1/message/${match.ID}`)).json()) as {
+        Text: string;
+        HTML: string;
+      };
       const text = `${body.Text}\n${body.HTML}`;
       const found = pattern.exec(text);
       if (found !== null) {

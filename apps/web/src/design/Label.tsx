@@ -14,7 +14,12 @@ export function Label({
   return (
     <label className={cn("text-label text-ink-500", className)} {...rest}>
       {children}
-      {required ? <span aria-hidden="true" className="text-state-danger"> *</span> : null}
+      {required ? (
+        <span aria-hidden="true" className="text-state-danger">
+          {" "}
+          *
+        </span>
+      ) : null}
     </label>
   );
 }

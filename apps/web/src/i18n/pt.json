@@ -57,6 +57,40 @@
       "expiredBody": "Não conseguimos atender a tempo. Se ainda precisar, envie uma nova mensagem."
     }
   },
+  "queue": {
+    "title": "Fila de atendimento",
+    "emptyTitle": "Nada por aqui",
+    "emptyBody": "Nenhum chamado aguardando atendimento.",
+    "priorityHigh": "Prioridade alta",
+    "priorityNormal": "Normal",
+    "slaBreached": "SLA estourado",
+    "timeRemaining": "{{minutes}} minutos",
+    "reason": {
+      "human_request": "Pedido do lojista",
+      "sensitive_topic": "Tema sensível",
+      "low_confidence": "Confiança baixa",
+      "repeated_failures": "Falhas repetidas",
+      "side_effect_action": "Ação com efeito colateral"
+    }
+  },
+  "ticket": {
+    "title": "Detalhe do chamado",
+    "loading": "Abra o chamado pela fila para carregar o contexto.",
+    "summary": "Resumo",
+    "context": "Contexto",
+    "pendingAction": "Ação pendente",
+    "pendingActionBody": "O lojista pediu uma ação que precisa de decisão do operador: {{type}}.",
+    "decisionLegend": "Decisão sobre a ação pendente",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "missingDecision": "Escolha aprovar ou rejeitar antes de enviar.",
+    "replyLabel": "Resposta ao lojista",
+    "replyPlaceholder": "Explique o que foi feito ou o próximo passo",
+    "send": "Enviar resposta",
+    "sent": "Resposta enviada.",
+    "alreadyClosed": "Este chamado já foi encerrado.",
+    "sendError": "Não foi possível enviar. Tente novamente."
+  },
   "accessDenied": {
     "title": "Acesso negado",
     "body": "Você não tem permissão para abrir esta página."

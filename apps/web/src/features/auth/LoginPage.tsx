@@ -27,8 +27,7 @@ export function LoginPage() {
   const [retrySeconds, setRetrySeconds] = useState<number | undefined>();
 
   const mutation = useMutation({
-    mutationFn: async (body: LoginBody) =>
-      api.post<{ account: Account }>("/v1/auth/login", body),
+    mutationFn: async (body: LoginBody) => api.post<{ account: Account }>("/v1/auth/login", body),
     onSuccess: ({ account }) => {
       client.setQueryData(["session"], account);
       navigate(next, { replace: true });
@@ -70,9 +69,7 @@ export function LoginPage() {
         <p className="text-body text-ink-500">{t("auth.signInSubtitle")}</p>
       </header>
       {bannerKey ? (
-        <Alert tone="danger">
-          {t(bannerKey, { seconds: retrySeconds ?? "" })}
-        </Alert>
+        <Alert tone="danger">{t(bannerKey, { seconds: retrySeconds ?? "" })}</Alert>
       ) : null}
       <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
         <FormField

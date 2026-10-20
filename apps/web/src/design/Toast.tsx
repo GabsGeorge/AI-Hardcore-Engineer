@@ -42,7 +42,7 @@ export function useToast() {
 const tones: Record<Tone, { bg: string; role: "status" | "alert" }> = {
   success: { bg: "bg-state-success text-surface-100", role: "status" },
   warning: { bg: "bg-state-warning text-surface-100", role: "status" },
-  danger:  { bg: "bg-state-danger text-surface-100", role: "alert" },
+  danger: { bg: "bg-state-danger text-surface-100", role: "alert" },
 };
 
 export function Toast({ tone = "success", children }: { tone?: Tone; children: ReactNode }) {
