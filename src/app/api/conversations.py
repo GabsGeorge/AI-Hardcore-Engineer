@@ -72,6 +72,7 @@ async def conversation_events(
     async def _generator() -> Any:
         last_status: str | None = row.get("handoff_status")
         last_ai_count = 0
+        last_sla_announced: str | None = None  # ticket_id whose SLA breach we already told
         for _ in range(60):  # até 60 ciclos de 1 s — cliente pode reabrir
             await asyncio.sleep(1)
             info = await repo.get_conversation_handoff(get_pool(), user.id, conversation_id)
@@ -86,6 +87,30 @@ async def conversation_events(
                         {"status": current_status or "none", "ticket_id": info.get("ticket_id")}
                     ),
                 }
+            # sla_breached + handoff_expired come from the live handoffs row — the scheduler
+            # updates priority/status there, so a single DB probe tells us when to fire.
+            open_row = await repo.get_latest_handoff_for_conversation(
+                get_pool(), user.id, conversation_id
+            )
+            if open_row is not None:
+                ticket_id = str(open_row["id"])
+                if (
+                    open_row["status"] == "awaiting_human"
+                    and open_row["priority"] == "high"
+                    and last_sla_announced != ticket_id
+                ):
+                    last_sla_announced = ticket_id
+                    yield {
+                        "event": "sla_breached",
+                        "data": json.dumps(
+                            {"ticket_id": ticket_id, "breached_at": info.get("ts", "")}
+                        ),
+                    }
+                if open_row["status"] == "expired":
+                    yield {
+                        "event": "handoff_expired",
+                        "data": json.dumps({"ticket_id": ticket_id}),
+                    }
             graph = request.app.state.graph
             if graph is None:
                 continue

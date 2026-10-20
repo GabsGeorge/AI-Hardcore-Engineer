@@ -39,6 +39,24 @@
       "weakPassword": "Password must be at least 12 characters and not one of the most used."
     }
   },
+  "chat": {
+    "inputLabel": "Message",
+    "inputPlaceholder": "Ask about fees, card machine, Pix, receivables advance…",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "sources": "Sources",
+    "rateLimited": "Too many messages within a minute. Wait a moment before sending again.",
+    "handoff": {
+      "waitingTitle": "Waiting for a human agent",
+      "waitingBody": "Your request is in the queue as ticket {{ticket}}.",
+      "slaTitle": "The reply is taking longer than usual",
+      "slaBody": "We've bumped the priority; the agent's reply will appear here as soon as it arrives.",
+      "resolvedTitle": "Replied",
+      "resolvedBody": "A human agent replied to your request.",
+      "expiredTitle": "Ticket expired",
+      "expiredBody": "We couldn't attend in time. If you still need help, send a new message."
+    }
+  },
   "accessDenied": {
     "title": "Access denied",
     "body": "You don't have permission to open this page."
