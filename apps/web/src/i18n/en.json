@@ -57,6 +57,20 @@
       "expiredBody": "We couldn't attend in time. If you still need help, send a new message."
     }
   },
+  "history": {
+    "title": "Your conversations",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "Start a conversation to see it listed here.",
+    "start": "Start a conversation",
+    "loadMore": "Load more",
+    "loadingMore": "Loading…",
+    "noPreview": "(no preview available)",
+    "status": {
+      "awaiting_human": "Waiting for a human agent",
+      "resolved": "Replied",
+      "expired": "Expired"
+    }
+  },
   "queue": {
     "title": "Handoff queue",
     "emptyTitle": "Nothing here",

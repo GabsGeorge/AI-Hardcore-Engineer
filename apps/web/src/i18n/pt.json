@@ -57,6 +57,20 @@
       "expiredBody": "Não conseguimos atender a tempo. Se ainda precisar, envie uma nova mensagem."
     }
   },
+  "history": {
+    "title": "Suas conversas",
+    "emptyTitle": "Nada por aqui ainda",
+    "emptyBody": "Comece uma conversa para registrar seu histórico.",
+    "start": "Iniciar uma conversa",
+    "loadMore": "Carregar mais",
+    "loadingMore": "Carregando…",
+    "noPreview": "(sem prévia disponível)",
+    "status": {
+      "awaiting_human": "Aguardando atendente",
+      "resolved": "Respondido",
+      "expired": "Encerrado por tempo"
+    }
+  },
   "queue": {
     "title": "Fila de atendimento",
     "emptyTitle": "Nada por aqui",

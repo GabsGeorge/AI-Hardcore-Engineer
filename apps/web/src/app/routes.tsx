@@ -44,6 +44,12 @@ export const router = createBrowserRouter([
                 }),
               },
               {
+                path: "/chat/:id",
+                lazy: async () => ({
+                  Component: (await import("@/features/chat/ChatPage")).ChatPage,
+                }),
+              },
+              {
                 path: "/history",
                 lazy: async () => ({
                   Component: (await import("@/features/conversations/HistoryPage")).HistoryPage,

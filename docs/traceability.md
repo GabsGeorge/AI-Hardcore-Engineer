@@ -8,7 +8,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_chat_contract.py, tests/contract/test_me_conversations.py, tests/contract/test_openapi_fuzz.py, tests/integration/test_chat_flow.py | ✅ |
 | REQ-API-03 | T015, T020, T028 | tests/contract/test_chat_validation.py | ✅ |
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |
-| REQ-API-05 | T105, T112 | tests/integration/test_hitl.py | ✅ |
+| REQ-API-05 | T105, T112 | tests/integration/test_hitl.py, tests/integration/test_me_conversations_isolation.py | ✅ |
 | REQ-API-06 | T137, T142 | tests/contract/test_idempotency.py | ✅ |
 | REQ-API-07 | T160, T166 | tests/contract/test_stream.py | ✅ |
 | REQ-GR-01 | T114, T119, T121 | tests/security/test_injection_direct.py, tests/security/test_injection_identity.py | ✅ |
@@ -57,7 +57,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-REL-03 | T134, T140 | tests/unit/test_resilience.py | ✅ |
 | REQ-REL-04 | T169, T170 | - | ✅ |
 | REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
-| REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
+| REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/integration/test_me_conversations_isolation.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/integration/test_metrics.py, tests/test_repo_hygiene.py | ✅ |
 | REQ-SEC-05 | T002, T033, T168 | - | ✅ |
