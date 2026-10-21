@@ -57,6 +57,29 @@
       "expiredBody": "We couldn't attend in time. If you still need help, send a new message."
     }
   },
+  "privacy": {
+    "title": "Privacy",
+    "body": "You control your data at any time. Pick one of the actions below.",
+    "deleteConvsTitle": "Delete my conversations",
+    "deleteConvsBody": "Removes the chat history and the associated checkpoints. Your account stays active.",
+    "deleteConvsAction": "Delete conversations",
+    "deleteAccountTitle": "Delete my account",
+    "deleteAccountBody": "Deletes conversations, name, e-mail and password. Unlinks your establishment (the establishment data stays because it is not yours). The audit trail is kept, pseudonymised.",
+    "deleteAccountAction": "Delete account",
+    "currentPassword": "Current password",
+    "badPassword": "Wrong password. Try again.",
+    "confirmLabel": "Type {{word}} to confirm",
+    "confirmHelp": "This action only runs when the text matches {{word}}.",
+    "deleted": "Conversations deleted.",
+    "accountDeleted": "Account deleted.",
+    "deleteError": "Could not complete. Try again.",
+    "deletedSummary": "What was deleted",
+    "summary": {
+      "conversations": "conversations",
+      "feedback": "ratings",
+      "audit_events_pseudonymized": "pseudonymised audit events"
+    }
+  },
   "history": {
     "title": "Your conversations",
     "emptyTitle": "Nothing here yet",

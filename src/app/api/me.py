@@ -6,12 +6,16 @@ import hashlib
 import hmac
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.auth import CurrentUser, current_user
 from app.api.schemas import FeedbackRequest
+from app.auth import passwords
+from app.auth import repo as auth_repo
+from app.auth import sessions as cookie_sessions
 from app.core.config import get_settings
+from app.core.errors import AppError, unauthorized
 from app.db import repo
 from app.db.pool import get_pool
 
@@ -79,6 +83,49 @@ async def delete_my_data(
     pseudonym = _pseudonymize(user.id)
     counts = await repo.delete_user_data(pool, user.id, pseudonym=pseudonym)
     return {"deleted": counts, "pseudonym": pseudonym}
+
+
+class DeleteAccountRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: str = Field(min_length=1, max_length=256)
+    confirmation: Literal["EXCLUIR", "DELETE"]
+
+
+@router.delete("/v1/me/account", status_code=204)
+async def delete_my_account(
+    body: DeleteAccountRequest,
+    request: Request,
+    response: Response,
+    user: CurrentUser = Depends(current_user),  # noqa: ARG001 — enforces authentication
+) -> Response:
+    """FR-016a: wipe the auth account, conversations, feedback and merchant link, in a single
+    transaction. The audit trail is preserved and pseudonymised. The ``current_user`` dep
+    translates ``acc_*`` to the merchant seed id for the graph; we re-read the cookie here to
+    recover the actual auth_accounts id."""
+    cookie_value = request.cookies.get(cookie_sessions.COOKIE_NAME)
+    if not cookie_value:
+        raise unauthorized()
+    try:
+        claims = cookie_sessions._decode(cookie_value)  # noqa: SLF001 — safe decode-only path
+    except cookie_sessions.SessionError as exc:
+        raise unauthorized() from exc
+
+    pool = get_pool()
+    account = await auth_repo.get_account_by_id(pool, claims.account_id)
+    if account is None:
+        raise unauthorized()
+
+    stored = await auth_repo.get_password_hash(pool, account.id)
+    if stored is None or not passwords.verify_password(stored, body.password):
+        raise AppError(401, "credentials_invalid", "Senha inválida.")
+
+    graph = request.app.state.graph
+    await auth_repo.delete_account_cascade(pool, account_id=account.id, graph=graph)
+    for name in (cookie_sessions.COOKIE_NAME, cookie_sessions.CSRF_COOKIE_NAME):
+        response.delete_cookie(name, path="/")
+    response.status_code = 204
+    return response
 
 
 @router.post("/v1/feedback", status_code=202)

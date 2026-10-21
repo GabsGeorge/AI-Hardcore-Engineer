@@ -64,7 +64,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-SEC-06 | T104, T110 | tests/contract/test_me_conversations.py, tests/integration/test_hitl.py, tests/security/test_handoff_rbac.py | ✅ |
 | REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-08 | T136, T142 | tests/security/test_audit.py, tests/security/test_rate_limit.py | ✅ |
-| REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py, tests/integration/test_sla.py | ✅ |
+| REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py, tests/integration/test_me_delete_account.py, tests/integration/test_sla.py | ✅ |
 | REQ-SUP-01 | T059, T061, T063, T064, T066 | tests/integration/test_support_agent.py, tests/unit/test_support_tools.py | ✅ |
 | REQ-SUP-02 | T058, T062 | tests/unit/test_seed.py | ✅ |
 | REQ-SUP-03 | T093, T097 | tests/integration/test_support_resilience.py | ✅ |

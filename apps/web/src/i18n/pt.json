@@ -57,6 +57,29 @@
       "expiredBody": "Não conseguimos atender a tempo. Se ainda precisar, envie uma nova mensagem."
     }
   },
+  "privacy": {
+    "title": "Privacidade",
+    "body": "Você controla seus dados a qualquer momento. Escolha uma das ações abaixo.",
+    "deleteConvsTitle": "Apagar minhas conversas",
+    "deleteConvsBody": "Remove o histórico de conversas e os checkpoints associados. A sua conta continua ativa.",
+    "deleteConvsAction": "Apagar conversas",
+    "deleteAccountTitle": "Excluir minha conta",
+    "deleteAccountBody": "Apaga conversas, nome, e-mail e senha. Desvincula o seu estabelecimento (os dados do estabelecimento ficam, pois não são seus). A auditoria é mantida de forma anonimizada.",
+    "deleteAccountAction": "Excluir conta",
+    "currentPassword": "Senha atual",
+    "badPassword": "Senha incorreta. Tente novamente.",
+    "confirmLabel": "Digite {{word}} para confirmar",
+    "confirmHelp": "Esta ação só é executada quando o texto bater com {{word}}.",
+    "deleted": "Conversas apagadas.",
+    "accountDeleted": "Conta excluída.",
+    "deleteError": "Não foi possível concluir. Tente novamente.",
+    "deletedSummary": "Resumo do que foi apagado",
+    "summary": {
+      "conversations": "conversas",
+      "feedback": "avaliações",
+      "audit_events_pseudonymized": "eventos de auditoria pseudonimizados"
+    }
+  },
   "history": {
     "title": "Suas conversas",
     "emptyTitle": "Nada por aqui ainda",
