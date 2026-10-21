@@ -45,7 +45,9 @@ test.describe("US1 — Cadastro, login e saída", () => {
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
       .analyze();
-    const critical = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    const critical = results.violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
     expect(critical).toEqual([]);
   });
 });

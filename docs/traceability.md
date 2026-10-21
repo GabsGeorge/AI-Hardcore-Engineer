@@ -19,9 +19,9 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-HITL-01 | T099, T108 | tests/integration/test_hitl.py | ✅ |
 | REQ-HITL-02 | T100, T106, T108, T109 | tests/integration/test_hitl.py | ✅ |
 | REQ-HITL-03 | T101, T108, T111 | tests/integration/test_hitl.py | ✅ |
-| REQ-HITL-04 | T102, T106, T109 | tests/integration/test_side_effect_approval.py | ✅ |
+| REQ-HITL-04 | T102, T106, T109 | tests/integration/test_handoff_reply_ui.py, tests/integration/test_side_effect_approval.py | ✅ |
 | REQ-HITL-05 | T139, T144 | tests/integration/test_sla.py | ✅ |
-| REQ-HITL-06 | T103, T111 | tests/integration/test_hitl.py | ✅ |
+| REQ-HITL-06 | T103, T111 | tests/contract/test_handoffs_sort.py, tests/integration/test_hitl.py | ✅ |
 | REQ-INF-01 | T034, T035, T154, T164 | tests/unit/test_obs_profile.py | ✅ |
 | REQ-INF-02 | T033, T164 | - | ✅ |
 | REQ-INF-03 | T035, T164 | - | ✅ |
@@ -61,7 +61,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/integration/test_metrics.py, tests/test_repo_hygiene.py | ✅ |
 | REQ-SEC-05 | T002, T033, T168 | - | ✅ |
-| REQ-SEC-06 | T104, T110 | tests/contract/test_me_conversations.py, tests/integration/test_hitl.py | ✅ |
+| REQ-SEC-06 | T104, T110 | tests/contract/test_me_conversations.py, tests/integration/test_hitl.py, tests/security/test_handoff_rbac.py | ✅ |
 | REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-08 | T136, T142 | tests/security/test_audit.py, tests/security/test_rate_limit.py | ✅ |
 | REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py, tests/integration/test_sla.py | ✅ |

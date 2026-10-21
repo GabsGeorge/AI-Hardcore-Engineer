@@ -17,12 +17,7 @@ export function MessageList({
 }) {
   const { t } = useTranslation();
   return (
-    <ol
-      className="flex flex-col gap-4"
-      aria-live="polite"
-      aria-relevant="additions"
-      role="log"
-    >
+    <ol className="flex flex-col gap-4" aria-live="polite" aria-relevant="additions" role="log">
       {messages.map((message) =>
         message.role === "user" ? (
           <li key={message.id} className="flex justify-end">

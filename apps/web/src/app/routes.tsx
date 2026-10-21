@@ -8,7 +8,10 @@ import { AuthGuard, RoleGuard } from "./guards";
  */
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/chat" replace /> },
-  { path: "/login", lazy: async () => ({ Component: (await import("@/features/auth/LoginPage")).LoginPage }) },
+  {
+    path: "/login",
+    lazy: async () => ({ Component: (await import("@/features/auth/LoginPage")).LoginPage }),
+  },
   {
     path: "/register",
     lazy: async () => ({ Component: (await import("@/features/auth/RegisterPage")).RegisterPage }),
@@ -36,7 +39,9 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: "/chat",
-                lazy: async () => ({ Component: (await import("@/features/chat/ChatPage")).ChatPage }),
+                lazy: async () => ({
+                  Component: (await import("@/features/chat/ChatPage")).ChatPage,
+                }),
               },
               {
                 path: "/history",
@@ -59,6 +64,12 @@ export const router = createBrowserRouter([
                 path: "/queue",
                 lazy: async () => ({
                   Component: (await import("@/features/handoffs/QueuePage")).QueuePage,
+                }),
+              },
+              {
+                path: "/queue/:ticket_id",
+                lazy: async () => ({
+                  Component: (await import("@/features/handoffs/TicketPage")).TicketPage,
                 }),
               },
             ],

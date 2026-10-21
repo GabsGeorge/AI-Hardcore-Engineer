@@ -43,7 +43,10 @@ export function Dialog({
       onClose={onClose}
     >
       <div className="flex items-start justify-between gap-4">
-        <h2 id={`${title.replace(/\s+/g, "-").toLowerCase()}-title`} className="text-heading text-ink-900">
+        <h2
+          id={`${title.replace(/\s+/g, "-").toLowerCase()}-title`}
+          className="text-heading text-ink-900"
+        >
           {title}
         </h2>
       </div>

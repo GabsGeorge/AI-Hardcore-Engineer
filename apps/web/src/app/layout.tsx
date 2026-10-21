@@ -6,7 +6,10 @@ import { api, isApiError } from "@/lib/api";
 import { setLanguage, type Language } from "@/lib/i18n";
 import { useSession, type Role } from "./session";
 
-const linksByRole: Record<Role, Array<{ to: string; key: "chat" | "history" | "queue" | "admin" | "privacy" }>> = {
+const linksByRole: Record<
+  Role,
+  Array<{ to: string; key: "chat" | "history" | "queue" | "admin" | "privacy" }>
+> = {
   merchant: [
     { to: "/chat", key: "chat" },
     { to: "/history", key: "history" },
