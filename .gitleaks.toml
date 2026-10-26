@@ -4,5 +4,13 @@ title = "getnet-support gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Only the empty template of environment variables is allowed"
-paths = ['''^\.env\.example$''']
+description = "Only the empty .env template and the auth test fixtures are allowed to look like secrets"
+paths = [
+    '''^\.env\.example$''',
+    # Integration and security tests exercise register/login/reset paths with throwaway
+    # strings. gitleaks matches them as generic api keys; the values are literal fixtures
+    # inside the repo, not real credentials.
+    '''^tests/integration/test_auth_.*\.py$''',
+    '''^tests/integration/test_me_delete_account\.py$''',
+    '''^tests/security/test_auth_enumeration\.py$''',
+]
