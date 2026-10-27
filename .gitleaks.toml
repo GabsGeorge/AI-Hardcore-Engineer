@@ -12,5 +12,11 @@ paths = [
     # inside the repo, not real credentials.
     '''^tests/integration/test_auth_.*\.py$''',
     '''^tests/integration/test_me_delete_account\.py$''',
+    '''^tests/integration/test_admin_invite\.py$''',
+    '''^tests/integration/test_admin_link_merchant\.py$''',
+    '''^tests/contract/test_admin_api\.py$''',
     '''^tests/security/test_auth_enumeration\.py$''',
+    '''^tests/security/test_admin_rbac\.py$''',
+    '''^tests/security/test_admin_audit_no_pii\.py$''',
+    '''^apps/web/e2e/06-admin\.spec\.ts$''',
 ]

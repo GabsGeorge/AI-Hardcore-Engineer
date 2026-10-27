@@ -100,11 +100,7 @@ function HandoffChip({ status }: { status: HandoffStatus }) {
     return null;
   }
   const tone =
-    status === "awaiting_human"
-      ? "warning"
-      : status === "resolved"
-        ? "success"
-        : "danger";
+    status === "awaiting_human" ? "warning" : status === "resolved" ? "success" : "danger";
   return <StatusBadge tone={tone}>{t(`history.status.${status}`)}</StatusBadge>;
 }
 

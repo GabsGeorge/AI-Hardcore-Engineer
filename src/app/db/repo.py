@@ -1,6 +1,7 @@
 """Parameterised SQL for users, conversations and audit. Every read of user-owned data filters
 by the owner."""
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -9,6 +10,62 @@ from psycopg.types.json import Jsonb
 from app.core.errors import not_found
 from app.db.pool import Pool
 from app.guardrails.pii import mask
+
+
+async def queue_overview(pool: Pool) -> dict[str, int]:
+    """Counts the admin dashboard surfaces: open tickets, SLA breaches today, expired today."""
+    async with pool.connection() as conn:
+        awaiting = await (
+            await conn.execute(
+                "SELECT count(*)::int AS n FROM handoffs WHERE status = 'awaiting_human'"
+            )
+        ).fetchone()
+        breached = await (
+            await conn.execute(
+                "SELECT count(*)::int AS n FROM handoffs"
+                " WHERE status = 'awaiting_human' AND sla_due_at < now()"
+                " AND created_at::date = (now() AT TIME ZONE 'utc')::date"
+            )
+        ).fetchone()
+        expired = await (
+            await conn.execute(
+                "SELECT count(*)::int AS n FROM handoffs"
+                " WHERE status = 'expired' AND created_at::date = (now() AT TIME ZONE 'utc')::date"
+            )
+        ).fetchone()
+    return {
+        "awaiting_human": (awaiting or {"n": 0})["n"],
+        "sla_breached_today": (breached or {"n": 0})["n"],
+        "expired_today": (expired or {"n": 0})["n"],
+    }
+
+
+async def list_audit_events(
+    pool: Pool,
+    *,
+    action: str | None = None,
+    since: datetime | None = None,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """Reads `audit_events` for the admin audit view. ``actor_id`` already carries the
+    pseudonym when the account has been deleted (``deleted:*``); the response does not need
+    further scrubbing because every write goes through ``insert_audit_event``'s ``_scrub``."""
+    sql = "SELECT ts, actor_id, actor_role, action, target, outcome, trace_id FROM audit_events"
+    args: list[Any] = []
+    clauses: list[str] = []
+    if action is not None:
+        clauses.append("action = %s")
+        args.append(action)
+    if since is not None:
+        clauses.append("ts >= %s")
+        args.append(since)
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY ts DESC LIMIT %s"
+    args.append(limit)
+    async with pool.connection() as conn:
+        rows = await (await conn.execute(sql, tuple(args))).fetchall()
+    return [dict(r) for r in rows]
 
 
 async def get_user(pool: Pool, user_id: str) -> dict[str, Any] | None:
