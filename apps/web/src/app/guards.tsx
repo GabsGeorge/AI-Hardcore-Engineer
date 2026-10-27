@@ -10,7 +10,7 @@ export function AuthGuard() {
   if (session.isLoading) {
     return <CenteredSpinner label={t("app.loading")} />;
   }
-  if (session.data === null) {
+  if (!session.data) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
@@ -23,7 +23,7 @@ export function RoleGuard({ allow }: { allow: Role[] }) {
   if (session.isLoading) {
     return <CenteredSpinner label={t("app.loading")} />;
   }
-  if (session.data === null) {
+  if (!session.data) {
     return <Navigate to="/login" replace />;
   }
   if (!allow.includes(session.data.role)) {

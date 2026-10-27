@@ -160,6 +160,61 @@ async def set_locked_until(pool: Pool, account_id: str, when: datetime | None) -
         )
 
 
+@dataclass(frozen=True)
+class AdminAccountRow:
+    id: str
+    email_lower: str
+    display_name: str
+    role: AccountRole
+    status: AccountStatus
+    linked_merchant_id: str | None
+
+
+async def list_accounts(
+    pool: Pool,
+    *,
+    role: AccountRole | None = None,
+    status: AccountStatus | None = None,
+    limit: int = 20,
+) -> list[AdminAccountRow]:
+    """Admin listing with LEFT JOIN on merchants so the SPA can show "linked to ...".
+
+    The filters are optional: an admin that passes neither gets every account up to the limit,
+    newest first. ``merchants.user_id`` is the seed id (e.g. ``cliente1988``), surfaced here as
+    ``linked_merchant_id`` so the SPA does not have to resolve it in a second request.
+    """
+    sql = (
+        "SELECT a.id, a.email_lower, a.display_name, a.role, a.status, m.user_id AS linked"
+        " FROM auth_accounts a"
+        " LEFT JOIN merchants m ON m.account_id = a.id"
+    )
+    args: list[Any] = []
+    clauses: list[str] = []
+    if role is not None:
+        clauses.append("a.role = %s")
+        args.append(role)
+    if status is not None:
+        clauses.append("a.status = %s")
+        args.append(status)
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY a.created_at DESC LIMIT %s"
+    args.append(limit)
+    async with pool.connection() as conn:
+        rows = await (await conn.execute(sql, tuple(args))).fetchall()
+    return [
+        AdminAccountRow(
+            id=r["id"],
+            email_lower=r["email_lower"],
+            display_name=r["display_name"],
+            role=r["role"],
+            status=r["status"],
+            linked_merchant_id=r["linked"],
+        )
+        for r in rows
+    ]
+
+
 async def record_login_attempt(pool: Pool, *, email: str, ip: str, outcome: str) -> None:
     async with pool.connection() as conn:
         await conn.execute(

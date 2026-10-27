@@ -5,7 +5,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ | Tarefa(s) | Teste(s) | Entregue |
 |---|---|---|---|
 | REQ-API-01 | T030, T075 | tests/contract/test_chat_contract.py, tests/integration/test_chat_flow.py | ✅ |
-| REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_chat_contract.py, tests/contract/test_me_conversations.py, tests/contract/test_openapi_fuzz.py, tests/integration/test_chat_flow.py | ✅ |
+| REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_admin_api.py, tests/contract/test_chat_contract.py, tests/contract/test_me_conversations.py, tests/contract/test_openapi_fuzz.py, tests/integration/test_admin_invite.py, tests/integration/test_admin_link_merchant.py, tests/integration/test_chat_flow.py | ✅ |
 | REQ-API-03 | T015, T020, T028 | tests/contract/test_chat_validation.py | ✅ |
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |
 | REQ-API-05 | T105, T112 | tests/integration/test_hitl.py, tests/integration/test_me_conversations_isolation.py | ✅ |
@@ -56,13 +56,13 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-REL-02 | T135, T141 | tests/unit/test_fallback.py | ✅ |
 | REQ-REL-03 | T134, T140 | tests/unit/test_resilience.py | ✅ |
 | REQ-REL-04 | T169, T170 | - | ✅ |
-| REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
+| REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_admin_rbac.py, tests/security/test_api_auth.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
 | REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/integration/test_me_conversations_isolation.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/integration/test_metrics.py, tests/test_repo_hygiene.py | ✅ |
 | REQ-SEC-05 | T002, T033, T168 | - | ✅ |
 | REQ-SEC-06 | T104, T110 | tests/contract/test_me_conversations.py, tests/integration/test_hitl.py, tests/security/test_handoff_rbac.py | ✅ |
-| REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
+| REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_admin_audit_no_pii.py, tests/security/test_audit.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-08 | T136, T142 | tests/security/test_audit.py, tests/security/test_rate_limit.py | ✅ |
 | REQ-SEC-09 | T138, T143, T144 | tests/integration/test_lgpd.py, tests/integration/test_me_delete_account.py, tests/integration/test_sla.py | ✅ |
 | REQ-SUP-01 | T059, T061, T063, T064, T066 | tests/integration/test_support_agent.py, tests/unit/test_support_tools.py | ✅ |

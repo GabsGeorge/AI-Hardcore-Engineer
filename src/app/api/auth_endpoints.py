@@ -55,6 +55,12 @@ class ResetConfirm(BaseModel):
     new_password: str = Field(min_length=1, max_length=256)
 
 
+class InviteAcceptRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    display_name: str = Field(min_length=2, max_length=80)
+    new_password: str = Field(min_length=1, max_length=256)
+
+
 class AccountOut(BaseModel):
     id: str
     role: str
@@ -325,6 +331,31 @@ async def reset_confirm(body: ResetConfirm, request: Request) -> GenericOk:
         target=f"account:{account_id}",
     )
     _ = revoked  # metric wired in Phase 2b observability sweep
+    return GenericOk()
+
+
+@router.post("/invites/{token}/accept", response_model=GenericOk)
+async def accept_invite(token: str, body: InviteAcceptRequest, request: Request) -> GenericOk:
+    """Invitee endpoint: consumes the one-time ``invite`` token, writes the password and marks
+    the account ``active``. The admin's invite emitted the token with ``purpose='invite'``."""
+    pool = get_pool()
+    account_id = await one_time_tokens.consume(pool, token=token, purpose="invite")
+    if account_id is None:
+        raise AppError(410, "token_invalid", "Convite inválido ou expirado.")
+    try:
+        hashed = passwords.hash_password(body.new_password)
+    except passwords.WeakPasswordError as exc:
+        raise AppError(422, "weak_password", str(exc)) from exc
+    await repo.set_password(pool, account_id, hashed)
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE auth_accounts SET display_name = %s, status = 'active',"
+            " email_verified_at = COALESCE(email_verified_at, now()) WHERE id = %s",
+            (body.display_name.strip(), account_id),
+        )
+    await _audit(
+        request, actor_id=account_id, action="invite_accepted", target=f"account:{account_id}"
+    )
     return GenericOk()
 
 

@@ -42,6 +42,7 @@ test.describe("US1 — Cadastro, login e saída", () => {
 
   test("tela de login não tem violações de a11y críticas", async ({ page }) => {
     await page.goto("/login");
+    // @ts-expect-error — @axe-core/playwright 4.10.1 was pinned to an older @playwright/test Page type
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
       .analyze();

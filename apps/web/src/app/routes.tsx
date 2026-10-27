@@ -29,6 +29,12 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import("@/features/auth/ResetPage")).ResetPage }),
   },
   {
+    path: "/invite",
+    lazy: async () => ({
+      Component: (await import("@/features/auth/AcceptInvitePage")).AcceptInvitePage,
+    }),
+  },
+  {
     element: <AppLayout />,
     children: [
       {
@@ -87,6 +93,30 @@ export const router = createBrowserRouter([
                 path: "/admin",
                 lazy: async () => ({
                   Component: (await import("@/features/admin/AdminHome")).AdminHome,
+                }),
+              },
+              {
+                path: "/admin/accounts",
+                lazy: async () => ({
+                  Component: (await import("@/features/admin/AccountsPage")).AccountsPage,
+                }),
+              },
+              {
+                path: "/admin/merchants",
+                lazy: async () => ({
+                  Component: (await import("@/features/admin/MerchantLinkPage")).MerchantLinkPage,
+                }),
+              },
+              {
+                path: "/admin/queue",
+                lazy: async () => ({
+                  Component: (await import("@/features/admin/QueueOverviewPage")).QueueOverviewPage,
+                }),
+              },
+              {
+                path: "/admin/audit",
+                lazy: async () => ({
+                  Component: (await import("@/features/admin/AuditPage")).AuditPage,
                 }),
               },
             ],
