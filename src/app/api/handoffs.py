@@ -45,12 +45,24 @@ async def reply(
     if graph is None:
         raise AppError(503, "service_unavailable", "Agents are not available yet.")
 
+    # Claim atômico ANTES do resume: fecha a janela de corrida entre o SELECT acima e o
+    # graph.ainvoke, bloqueando resume duplo quando dois operadores batem no reply ao mesmo
+    # tempo. Só um ganha o UPDATE; o outro vê operator_id != NULL e recebe 409 aqui.
+    claimed = await repo.claim_handoff(get_pool(), ticket_id=ticket_id, operator_id=user.id)
+    if claimed is None:
+        raise AppError(409, "ticket_closed", "Ticket already resolved or being handled.")
+
     # Resume BEFORE closing the ticket: the escalation node re-runs from the top and must still
     # see it open. The resumed turn acts as the ticket OWNER, never the operator (ADR 0005).
-    await graph.ainvoke(
-        Command(resume={"reply": body.reply, "action_decision": body.action_decision}),
-        config=graph_config(row["user_id"], row["conversation_id"], request.state.trace_id),
-    )
+    try:
+        await graph.ainvoke(
+            Command(resume={"reply": body.reply, "action_decision": body.action_decision}),
+            config=graph_config(row["user_id"], row["conversation_id"], request.state.trace_id),
+        )
+    except Exception:
+        # Resume falhou: libera o claim para que outro operador possa tentar.
+        await repo.release_handoff_claim(get_pool(), ticket_id=ticket_id, operator_id=user.id)
+        raise
     try:
         await repo.resolve_handoff(
             get_pool(),
