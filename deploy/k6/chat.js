@@ -12,7 +12,13 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 
 const BASE_URL = __ENV.BASE_URL || "http://api:8000";
-const TOKEN = __ENV.AUTH_TOKEN || "";
+// AUTH_TOKENS: lista de tokens separados por vírgula, um por usuário. Cada VU usa o seu
+// próprio token para que o rate limit por usuário (30/min) não sature a carga.
+// Fallback AUTH_TOKEN (singular): compatibilidade com o uso antigo.
+const TOKENS = (__ENV.AUTH_TOKENS || __ENV.AUTH_TOKEN || "")
+  .split(",")
+  .map((t) => t.trim())
+  .filter(Boolean);
 
 export const options = {
   vus: Number(__ENV.VUS || 20),
@@ -39,10 +45,12 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export default function () {
+export default function (/* vuContext */) {
+  // Round-robin: cada VU recebe um token distinto (ou todos usam o único disponível).
+  const token = TOKENS[(__VU - 1) % TOKENS.length] || "";
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${TOKEN}`,
+    Authorization: `Bearer ${token}`,
   };
   const scenario = Math.random() < 0.7 ? "simple" : "compound";
   const message =
