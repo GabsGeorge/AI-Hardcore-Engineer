@@ -94,8 +94,8 @@ da emissão deste relatório. Nenhum achado remanescente de severidade bloqueant
 **Não bloqueantes** (ficam no backlog pós-item 5, nesta ordem):
 
 - evals com LLM real em `docs/reports/eval.md` (hoje só degraded_response com dummy key)
-- T170 — rodar `deploy/k6/chat.js` e preencher `docs/reports/load-test.md` com números reais
-- adicionar `getnet.net/en` nas fontes do retriever (inglês hoje depende do PT retrieval)
+- ~~T170 — rodar `deploy/k6/chat.js` e preencher `docs/reports/load-test.md` com números reais~~ ✅ ea4449d
+- ~~adicionar `getnet.net/en` nas fontes do retriever (inglês hoje depende do PT retrieval)~~ ✅ seeds EN em `src/app/rag/sources.yaml` + q-07/q-08 em `evals/retrieval_labeled.yaml`
 - adicionar fluxo de crediário ao `evals/golden_set.yaml`
 - ADR 0007 (streaming SSE) ficou genérico; atualizar com o contrato de 429 do events channel
 - Grafana sem admin/admin: trocar provisioning para forçar troca de senha no primeiro login

@@ -2,12 +2,16 @@
 # Only hosts under `allowed_domains` (and their subdomains) are fetched, always over https and
 # only where robots.txt allows. Seeds are curated because parts of the site are rendered by JS
 # and the sitemap is incomplete; together they cover the 10 golden-set scenarios.
-# No public English Getnet Brasil page was found: EN questions reach PT content through the
-# PT↔EN query rewrite (REQ-RAG-05). Add EN seeds here with `lang: en` when available.
+# English content comes from the regional Santander Getnet portal (getnet.net/en). It is
+# shallower than the Brazilian site but covers in-person, online, omnichannel, value-added
+# and the SEP e-commerce API — enough for EN queries to land without relying only on PT↔EN
+# rewrite (REQ-RAG-05). PT-specific products (Pix, antecipação, crediário) still fall back
+# to the PT corpus via the query rewrite path.
 allowed_domains:
   - getnet.com.br
+  - getnet.net
 
-max_pages: 60
+max_pages: 75
 
 seeds:
   # Card machines (scenarios 1, 5)
@@ -46,6 +50,36 @@ seeds:
   # Public PDFs
   - url: https://site.getnet.com.br/wp-content/uploads/2025/08/Contrato-de-oferta-de-maquina-em-comodato-com-pagamento-de-taxa-de-adesao.pdf
     type: pdf
+
+  # English — regional Santander Getnet portal (REQ-RAG-05)
+  - url: https://www.getnet.net/en/
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions/in-person-payments
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions/online-payments
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions/omnichannel
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions/value-added-solutions
+    lang: en
+  - url: https://www.getnet.net/en/our-solutions/agentic-commerce
+    lang: en
+  - url: https://www.getnet.net/en/your-business
+    lang: en
+  - url: https://www.getnet.net/en/your-business/large-enterprises
+    lang: en
+  - url: https://www.getnet.net/en/your-business/industries/restaurants
+    lang: en
+  - url: https://www.getnet.net/en/your-business/industries/travel
+    lang: en
+  - url: https://www.getnet.net/en/your-business/industries/health-and-beauty
+    lang: en
+  - url: https://www.getnet.net/en/corporate/about-us
+    lang: en
+  - url: https://www.getnet.net/en/developers
+    lang: en
 
 sitemaps:
   - url: https://site.getnet.com.br/post-sitemap.xml
