@@ -98,6 +98,7 @@ da emissão deste relatório. Nenhum achado remanescente de severidade bloqueant
 - ~~adicionar `getnet.net/en` nas fontes do retriever (inglês hoje depende do PT retrieval)~~ ✅ seeds EN em `src/app/rag/sources.yaml` + q-07/q-08 em `evals/retrieval_labeled.yaml`
 - adicionar fluxo de crediário ao `evals/golden_set.yaml`
 - ~~ADR 0007 (streaming SSE) ficou genérico; atualizar com o contrato de 429 do events channel~~ ✅ ADR 0007 era de Langfuse/OTel; o canal SSE agora tem seu próprio [ADR 0011](../../../docs/adr/0011-sse-events-channel.md) e o 429 está documentado em `contracts/events.md` das duas specs
+- ~~tags fixas (python/node/nginx/pg/redis/prometheus/grafana/k6)~~ ✅ todas pinadas em `docker-compose.yml`, `docker-compose.test.yml` e `Dockerfile`; 29/29 testes verdes nas novas imagens
 - Grafana sem admin/admin: trocar provisioning para forçar troca de senha no primeiro login
 - integrar Trivy ao CI para FS scan do SPA
 
