@@ -27,9 +27,12 @@ def _scenarios() -> list[dict[str, Any]]:
 @pytest.mark.req("REQ-ORC-01", "REQ-OBS-06")
 def test_golden_set_meets_minimum_coverage() -> None:
     scenarios = _scenarios()
-    assert len(scenarios) >= 18
+    assert len(scenarios) >= 21
     languages = {s["language"] for s in scenarios}
     assert "pt" in languages and "en" in languages
+    assert any("credi" in s["message"].lower() for s in scenarios), (
+        "golden set deve cobrir crediário (produto BR relevante do catálogo)"
+    )
 
 
 _SAMPLE_IDS = {

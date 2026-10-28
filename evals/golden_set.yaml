@@ -121,3 +121,25 @@ scenarios:
     expected:
       route: [support]
       tools_contains: [lookup_decline_code]
+
+  # Crediário (spec 001 cenário 9) — produto BR-only, cobre knowledge PT + EN via rewrite
+  - id: sc-19-knowledge-crediario
+    language: pt
+    message: "Como funciona o crediário da Getnet e em quantas parcelas posso vender?"
+    expected:
+      route: [knowledge]
+      tools_contains: [search_knowledge_base]
+      has_sources: true
+
+  - id: sc-20-fanout-crediario
+    language: pt
+    message: "Quais são as taxas do crediário e quando o dinheiro cai na minha conta?"
+    expected:
+      route: [knowledge, support]
+
+  - id: sc-21-en-crediario
+    language: en
+    message: "How do installment plans (crediário) work for Getnet merchants?"
+    expected:
+      route: [knowledge]
+      has_sources: true
