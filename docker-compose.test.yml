@@ -73,6 +73,16 @@ services:
       - ./apps/web:/app
     command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; exec npm run test"]
 
+  # Vite production build: valida que o SPA compila (TypeScript estrito + Vite). Falhas
+  # aqui pegam regressões de tipo que `lint`/`tsc --noEmit` deixa passar quando a emissão
+  # está desligada, e falhas de import que só aparecem no bundle.
+  web-build:
+    image: node:22.11.0-alpine
+    working_dir: /app
+    volumes:
+      - ./apps/web:/app
+    command: ["sh", "-c", "set -e; if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi; exec npm run build"]
+
   web-e2e:
     image: mcr.microsoft.com/playwright:v1.49.0-jammy
     working_dir: /app
