@@ -21,3 +21,18 @@ mesmo Bearer token das rotas REST.
 | `keepalive` | `{}` a cada 15 s |
 
 O canal base continua sendo `GET /v1/conversations/{id}` com polling a cada 3 s; SSE é melhoria.
+
+### Limite de conexões (REQ-SEC-08, ADR 0011)
+
+O canal `events` honra `SSE_EVENTS_MAX_PER_USER` (default 3) conexões simultâneas por usuário.
+Excedente é rejeitado com:
+
+```
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+
+{"code": "too_many_connections", "message": "Too many open event streams (max 3)."}
+```
+
+Cliente deve esperar backoff antes de reconectar. `/v1/chat/stream` não aplica esse teto (é
+short-lived; defesa é o rate limit de requests).
