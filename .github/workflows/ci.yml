@@ -49,6 +49,39 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
             run --rm tests python scripts/check_traceability.py
 
+  web-lint:
+    name: web-lint (eslint + prettier + tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: web-lint
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm web-lint
+
+  web-tests:
+    name: web-tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: vitest
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm web-tests
+
+  web-e2e:
+    name: web-e2e (playwright + mailpit, rede isolada)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: playwright e2e
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm web-e2e
+
+  # Nota: a11y (axe-core) já roda dentro do web-e2e pelo spec `01-register-login` —
+  # não precisa de job separado.
+
   secrets:
     name: gitleaks (histórico completo)
     runs-on: ubuntu-latest
