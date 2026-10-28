@@ -100,11 +100,15 @@ services:
   grafana:
     profiles: ["obs"]
     image: grafana/grafana:11.3.0
+    # Credenciais vem do .env; sem default admin/admin para o painel exposto na porta 3000.
+    # Rodar `./scripts/gen_grafana_password.sh` para gerar; o compose recusa a subir sem a env.
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env - use scripts/gen_grafana_password.sh}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Dashboards sao read-only (provisioning). Edicoes locais nao sobrescrevem os JSONs.
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/operational.json
     volumes:
       - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
