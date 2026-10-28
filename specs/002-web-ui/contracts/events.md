@@ -30,3 +30,11 @@ Cache-Control: no-cache
 Connection: keep-alive
 X-Accel-Buffering: no        # necessário no nginx para flush imediato
 ```
+
+## Limite de conexões por usuário (ADR 0011)
+
+`/v1/conversations/{id}/events` aplica `SSE_EVENTS_MAX_PER_USER` (default 3) conexões
+simultâneas por usuário. A 4ª tentativa recebe `429 too_many_connections` antes do upgrade
+para SSE; a UI deve mostrar um aviso ("abra apenas uma aba") e tentar reconectar após
+backoff. Ver [docs/adr/0011-sse-events-channel.md](../../../docs/adr/0011-sse-events-channel.md)
+para o racional e os testes de referência.
