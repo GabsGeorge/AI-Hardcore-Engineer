@@ -1,0 +1,14 @@
+# Vulnerabilidades aceitas conscientemente, com justificativa e data de revisao.
+# Formato: https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/
+#
+# IMPORTANTE: cada entrada tem `expired_at`. Depois dessa data o Trivy volta a bloquear
+# a build ate que seja renovada ou removida (quando o fix estiver aplicado).
+vulnerabilities:
+  - id: CVE-2023-54404
+    statement: >-
+      zod 3.23.8 -> fix em 4.6.6. A migracao 3.x -> 4.x tem breaking changes
+      (schema API) e sai do escopo do PR de Trivy CI. O risco e DoS via array
+      sem limite, mas no SPA os schemas de validacao sao de inputs pequenos
+      (login, chat message, feedback), com rate limit upstream (30 req/min),
+      entao a exposicao e baixa. Tarefa de upgrade acompanhada em backlog.
+    expired_at: 2026-12-15

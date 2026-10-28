@@ -123,3 +123,42 @@ jobs:
           version: latest
       - name: uv lock está em dia
         run: uv lock --check
+
+  trivy-fs:
+    name: trivy (fs scan — SPA + raiz)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      # SPA: deps do package-lock vs CVEs conhecidos.
+      - name: trivy fs apps/web
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: apps/web
+          format: sarif
+          output: trivy-web.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: "true"
+          trivyignores: .trivyignore.yaml
+      # Raiz: pyproject + uv.lock + Dockerfiles.
+      - name: trivy fs raiz (python + docker)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          skip-dirs: apps/web,node_modules
+          format: sarif
+          output: trivy-root.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: "true"
+          trivyignores: .trivyignore.yaml
+      - name: upload sarif
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .

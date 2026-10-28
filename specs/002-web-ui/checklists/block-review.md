@@ -100,7 +100,7 @@ da emissão deste relatório. Nenhum achado remanescente de severidade bloqueant
 - ~~ADR 0007 (streaming SSE) ficou genérico; atualizar com o contrato de 429 do events channel~~ ✅ ADR 0007 era de Langfuse/OTel; o canal SSE agora tem seu próprio [ADR 0011](../../../docs/adr/0011-sse-events-channel.md) e o 429 está documentado em `contracts/events.md` das duas specs
 - ~~tags fixas (python/node/nginx/pg/redis/prometheus/grafana/k6)~~ ✅ todas pinadas em `docker-compose.yml`, `docker-compose.test.yml` e `Dockerfile`; 29/29 testes verdes nas novas imagens
 - ~~Grafana sem admin/admin: trocar provisioning para forçar troca de senha no primeiro login~~ ✅ compose exige `GRAFANA_ADMIN_PASSWORD` via `.env`; `scripts/gen_grafana_password.sh` gera uma senha de 32 chars; compose falha com mensagem clara sem a env
-- integrar Trivy ao CI para FS scan do SPA
+- ~~integrar Trivy ao CI para FS scan do SPA~~ ✅ job `trivy-fs` em `.github/workflows/ci.yml` com SARIF upload; corrigiu @remix-run/router (XSS); zod 3→4 (DoS) coberto em `.trivyignore.yaml` com `expired_at` 2026-12-15
 
 Threat model (`specs/001-multi-agent-support/threat-model.md`) permanece coerente: todos os
 STRIDE items do original seguem mitigados; a adição do limite SSE fecha o DoS leve que estava
