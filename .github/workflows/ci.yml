@@ -69,6 +69,26 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
             run --rm web-tests
 
+  web-build:
+    name: web-build (vite production bundle)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: vite build
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml \
+            run --rm web-build
+
+  compose-build:
+    name: compose-build (todos os serviços)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose build
+        # Garante que todas as imagens (api, web, ingest, tests, k6, …) sobem num clone zero.
+        # Pega regressões como o node_modules indo pro build context do web (item 1).
+        run: docker compose build
+
   web-e2e:
     name: web-e2e (playwright + mailpit, rede isolada)
     runs-on: ubuntu-latest
