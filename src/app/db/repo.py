@@ -217,6 +217,32 @@ async def get_handoff(pool: Pool, ticket_id: UUID) -> dict[str, Any] | None:
         return await cur.fetchone()
 
 
+async def claim_handoff(pool: Pool, *, ticket_id: UUID, operator_id: str) -> dict[str, Any] | None:
+    """Claim atômico: marca o ticket como sendo tratado por este operador. Devolve a linha
+    (status ainda ``awaiting_human``) se este operador conseguiu reivindicar; devolve None
+    se outro operador já reivindicou ou o ticket não está mais awaiting. Fecha a janela de
+    corrida entre o SELECT e o ``graph.ainvoke(Command(resume=...))`` (REQ-HITL-04)."""
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            "UPDATE handoffs SET operator_id = %s"
+            " WHERE id = %s AND status = 'awaiting_human' AND operator_id IS NULL"
+            " RETURNING id, conversation_id, user_id, pending_action, status",
+            (operator_id, ticket_id),
+        )
+        return await cur.fetchone()
+
+
+async def release_handoff_claim(pool: Pool, *, ticket_id: UUID, operator_id: str) -> None:
+    """Libera a reivindicação quando o resume falha, para que outro operador possa tentar.
+    Só limpa se o claim ainda é deste operador e o ticket segue ``awaiting_human``."""
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE handoffs SET operator_id = NULL"
+            " WHERE id = %s AND operator_id = %s AND status = 'awaiting_human'",
+            (ticket_id, operator_id),
+        )
+
+
 _DECISION_MAP = {"approve": "approved", "reject": "rejected"}
 
 

@@ -91,8 +91,12 @@ def build_response(state: dict[str, Any], conversation_id: UUID, trace_id: str) 
     )
 
 
-async def _reject_foreign_user_id(body: ChatRequest, user: CurrentUser, trace_id: str) -> None:
-    """403 + audit for a payload user_id that differs from the JWT subject (REQ-SEC-07)."""
+async def _reject_foreign_user_id(
+    body: ChatRequest, user: CurrentUser, request: Request, trace_id: str
+) -> None:
+    """403 + audit for a payload user_id that differs from the JWT subject (REQ-SEC-07).
+
+    O endpoint vai na metadata para distinguir /v1/chat de /v1/chat/stream nas auditorias."""
     if body.user_id is None or body.user_id == user.id:
         return
     await repo.insert_audit_event(
@@ -103,6 +107,7 @@ async def _reject_foreign_user_id(body: ChatRequest, user: CurrentUser, trace_id
         target=f"user:{body.user_id}",
         outcome="denied",
         trace_id=trace_id,
+        metadata={"endpoint": request.url.path},
     )
     raise forbidden("forbidden_user_mismatch", "user_id does not match the authenticated user.")
 
@@ -146,7 +151,7 @@ async def chat(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> ChatResponse:
     trace_id: str = request.state.trace_id
-    await _reject_foreign_user_id(body, user, trace_id)
+    await _reject_foreign_user_id(body, user, request, trace_id)
     await check_rate_limit(request, user.id)
     body_dict = body.model_dump(mode="json", exclude_none=True)
     cached = await idempotency_get_or_claim(request, user.id, idempotency_key, body_dict)
@@ -176,7 +181,7 @@ async def chat_stream(
 ) -> EventSourceResponse:
     """SSE variant of /v1/chat: agent_step per node, handoff, then done (contracts/events.md)."""
     trace_id: str = request.state.trace_id
-    await _reject_foreign_user_id(body, user, trace_id)
+    await _reject_foreign_user_id(body, user, request, trace_id)
     await check_rate_limit(request, user.id)
     graph = _graph_or_503(request)
     conversation_id = await repo.get_or_create_conversation(
