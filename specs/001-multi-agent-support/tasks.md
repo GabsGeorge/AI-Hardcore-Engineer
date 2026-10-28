@@ -440,7 +440,7 @@ Ao final, os contratos ficam **congelados**.
 **Purpose**: Validação final antes da entrega.
 
 - [X] T176 Executar `/ponytail-audit` no repositório e aplicar os achados "Must fix" e "Should fix"
-- [ ] T177 Executar `/security-review` e revisar o threat model contra o código final (`specs/001-multi-agent-support/threat-model.md`)
+- [X] T177 Executar `/security-review` e revisar o threat model contra o código final (`specs/001-multi-agent-support/threat-model.md`) — resultado em `specs/002-web-ui/checklists/block-review.md` (seção "T177"); 4 achados bloqueantes identificados e corrigidos nos itens 1–4 do backlog pós-fechamento (f72784a, d0fd0b0, e600454, d4b4cf2); threat model segue coerente
 - [X] T178 Executar `/ponytail-debt` e registrar os `shortcut:` aceitos na seção de limitações do README — registrado em `docs/limitations.md`, linkado no README
 - [ ] T179 Validar `specs/001-multi-agent-support/quickstart.md` do zero num clone limpo (sem `make` e com `make`) — *Nota: comandos corrigidos (`eval`, `--role`); falta rodar num clone limpo com chave real.*
 - [ ] T180 Atualizar `docs/architecture.drawio` com o que mudou durante a implementação
