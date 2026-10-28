@@ -42,7 +42,11 @@ services:
   api:
     build: { context: ., target: runtime }
     <<: *app-env
-    expose: ["8000"]  # internal only; nginx (web) is the single public entrance (research §8)
+    expose: ["8000"]
+    ports:
+      # Publicada para scripts/curls e carga (k6, scripts/issue_token.py). O nginx (web) segue
+      # como entrada da SPA em 80; os dois convivem.
+      - "8000:8000"
     volumes:
       - models-cache:/home/app/.cache
     depends_on:
