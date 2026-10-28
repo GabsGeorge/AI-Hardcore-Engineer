@@ -18,10 +18,14 @@ Pré-requisitos: Docker Desktop (engine Linux). Nada mais.
 ```bash
 cp .env.example .env            # preencha OPENAI_API_KEY, JWT_SECRET (openssl rand -hex 32),
                                 # POSTGRES_PASSWORD, DATABASE_URL e REDIS_URL
-docker compose up -d --build    # api, postgres (pgvector), redis
+docker compose up -d --build    # api, web (nginx servindo dist), mailpit, postgres (pgvector), redis
 ```
 
-A API sobe em `http://localhost:8000`. Healthchecks: `/livez` e `/readyz`.
+A API sobe em `http://localhost:8000` e a **UI web** em `http://localhost` (nginx na porta 80).
+O Mailpit roda só na rede do compose; para abrir o inbox dev em
+`http://localhost:8025`, publique a porta via
+`docker compose exec mailpit mailpit --help` ou acrescente `ports: ["8025:8025"]`
+ao serviço no `docker-compose.override.yml` local.  Healthchecks: `/livez` e `/readyz`.
 
 ### Gerar tokens de teste
 
@@ -150,6 +154,35 @@ docker compose --profile load run --rm k6 run /scripts/chat.js
 
 Thresholds de bloqueio: p95 simples < 8 s, composto < 15 s, erros < 1 %. Detalhes em
 [docs/reports/load-test.md](docs/reports/load-test.md).
+
+---
+
+## UI web
+
+A UI em [apps/web/](apps/web/) é o canal principal para os três perfis (lojista, operador, admin).
+Toda rota exige **sessão cookie** (`sid`) + **CSRF double-submit** (`csrf_token` + header
+`X-CSRF-Token`); a identidade continua vindo do token no backend, nunca do payload.
+
+Fluxos entregues:
+
+- **US1 — Cadastro, login e logout**: `/register` → verificação por e-mail (link no Mailpit) →
+  `/login` → `/chat`. "Sair" encerra a sessão (revoga `sid`).
+- **US2 — Chat em tempo real**: `/chat` consome `POST /v1/chat/stream` por SSE (`agent_step`,
+  `handoff`, `done`); contador de tokens e indicador de guardrail.
+- **US3 — Handoff do operador**: `/handoffs` lista a fila com SLA; detalhe permite responder e
+  o grafo retoma com a identidade do dono do ticket (ADR 0005).
+- **US4 — Histórico & reabrir**: `/history` lista as conversas do dono; "reabrir" leva ao `/chat`
+  carregando a mesma `thread_id`.
+- **US5 — Privacidade**: `/privacy` permite **apagar conversa** (idempotente, confirmação dupla)
+  e **excluir conta** (anonimiza eventos → `deleted:*` e revoga sessões — FR-016, FR-016a,
+  REQ-SEC-09).
+- **US6 — Admin**: `/admin/accounts` (listar/convidar/ativar/desativar), `/admin/merchants`
+  (vincular/desvincular `account_id` → `merchants`), `/admin/queue` (visão da fila com SLA
+  estourado hoje) e `/admin/audit` (eventos pseudonimizados — REQ-SEC-07).
+
+GIFs curtos por história em [docs/ui/](docs/ui/) (gravados em viewport desktop + mobile).
+Design tokens, componentes e padrões de interação em [apps/web/DESIGN.md](apps/web/DESIGN.md);
+jornada por perfil e tracking em [apps/web/PRODUCT.md](apps/web/PRODUCT.md). [REQ-INF-06]
 
 ---
 

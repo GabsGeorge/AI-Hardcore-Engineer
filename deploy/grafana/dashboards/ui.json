@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 39,
+  "title": "Getnet - UI web",
+  "uid": "getnet-ui",
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Taxa de login por outcome",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(getnet_auth_login_total[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Sessões abertas (acumulado)",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(getnet_auth_sessions_opened_total)",
+          "legendFormat": "sessões"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "401 (requests sem/invalid session)",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(getnet_auth_failures_total[5m]))",
+          "legendFormat": "401/s"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "p50/p95 latência SSE (/v1/chat)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(getnet_http_request_duration_seconds_bucket{route=\"/v1/chat\"}[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(getnet_http_request_duration_seconds_bucket{route=\"/v1/chat\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "E-mails transacionais (enviados vs erros)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (kind) (rate(getnet_auth_email_sent_total[5m]))",
+          "legendFormat": "ok {{kind}}"
+        },
+        {
+          "expr": "sum by (kind) (rate(getnet_auth_email_errors_total[5m]))",
+          "legendFormat": "erro {{kind}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    }
+  ]
+}
