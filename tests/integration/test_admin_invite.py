@@ -73,9 +73,13 @@ async def test_invite_mints_token_and_accept_activates(
 
     fresh_token = await one_time_tokens.mint(db_pool, account_id=invited.id, purpose="invite")
 
+    # No fluxo real a pessoa convidada chega sem sessão ativa; aqui o admin ainda está
+    # logado no cliente, então ecoamos o cookie CSRF no header para passar pelo middleware
+    # global (item 2) — o endpoint em si só valida o token do convite.
     accept = await client.post(
         f"/v1/auth/invites/{fresh_token}/accept",
         json={"display_name": "Operador 1", "new_password": "operador-forte-456"},
+        headers={"X-CSRF-Token": client.cookies.get("csrf", "")},
     )
     assert accept.status_code == 200, accept.text
 

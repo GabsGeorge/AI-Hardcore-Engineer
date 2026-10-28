@@ -78,9 +78,14 @@ async def test_reset_password_revokes_every_live_session(
     assert me1.status_code == 200
 
     token = await one_time_tokens.mint(db_pool, account_id=account.id, purpose="password_reset")
+    # Real-world: a usuária chega no reset vinda do e-mail, sem sessão ativa (ou noutra aba).
+    # Como aqui simulamos o mesmo cliente, limpamos cookies/CSRF antes do POST para que o
+    # middleware global de CSRF (item 2) trate o pedido como pre-auth e deixe passar.
+    csrf_value = client.cookies.get("csrf")
     reset = await client.post(
         "/v1/auth/password/reset",
         json={"token": token, "new_password": "outra-senha-segura-123"},
+        headers={"X-CSRF-Token": csrf_value} if csrf_value else None,
     )
     assert reset.status_code == 200
 
