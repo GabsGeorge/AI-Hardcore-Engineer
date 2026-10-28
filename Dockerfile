@@ -2,7 +2,7 @@
 # Multi-stage build (REQ-INF-02): dependencies are resolved from uv.lock in a builder stage;
 # the runtime image has no build toolchain and runs as a non-root user (REQ-SEC-05).
 
-FROM python:3.12-slim-bookworm AS base
+FROM python:3.12.7-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
