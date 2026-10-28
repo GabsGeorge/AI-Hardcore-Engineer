@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 
 from app.api import admin, auth_endpoints, chat, conversations, handoffs, health, me
 from app.core.config import get_settings
+from app.core.csrf_middleware import enforce_csrf
 from app.core.errors import install_error_handlers
 from app.db.migrate import migrate
 from app.db.pool import close_pool, open_pool
@@ -50,6 +51,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(title="Getnet Multi-Agent Support API", version="1.0.0", lifespan=lifespan)
     install_error_handlers(app)
+
+    # Starlette wraps middleware in reverse-registration order: the LAST added is the
+    # outermost. We add enforce_csrf first and trace_requests second so trace_requests
+    # runs outermost (binds trace_id before enforce_csrf can emit its 403 response).
+    app.middleware("http")(enforce_csrf)
 
     @app.middleware("http")
     async def trace_requests(

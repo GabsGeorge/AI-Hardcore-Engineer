@@ -18,5 +18,6 @@ paths = [
     '''^tests/security/test_auth_enumeration\.py$''',
     '''^tests/security/test_admin_rbac\.py$''',
     '''^tests/security/test_admin_audit_no_pii\.py$''',
+    '''^tests/security/test_csrf_middleware\.py$''',
     '''^apps/web/e2e/06-admin\.spec\.ts$''',
 ]
