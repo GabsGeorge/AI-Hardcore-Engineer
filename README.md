@@ -5,9 +5,10 @@ responde em até 8 s por LLM + RAG + tools; falhas, dúvidas sensíveis e açõe
 passam por um fluxo de handoff com retomada humana. **Toda operação roda via `docker compose`
 na própria máquina — não há dependência de Python ou `make` no host.**
 
-> **Status**: Fase 2 (US1–US7) concluída e verde; Fase 3 (observabilidade, resiliência, LGPD, CI
-> e carga) em andamento. Veja [specs/001-multi-agent-support/tasks.md](specs/001-multi-agent-support/tasks.md)
-> para o quadro.
+> **Status**: Spec **001** (multi-agent) com Fases 1–2 fechadas (US1–US7) e Fase 3 em andamento;
+> spec **002-web-ui** 100 % entregue (US1–US6 + Fase 9 polish). Suíte atual com **427 testes
+> verdes**. Quadros em [specs/001-multi-agent-support/tasks.md](specs/001-multi-agent-support/tasks.md)
+> e [specs/002-web-ui/tasks.md](specs/002-web-ui/tasks.md).
 
 ---
 
@@ -17,15 +18,18 @@ Pré-requisitos: Docker Desktop (engine Linux). Nada mais.
 
 ```bash
 cp .env.example .env            # preencha OPENAI_API_KEY, JWT_SECRET (openssl rand -hex 32),
-                                # POSTGRES_PASSWORD, DATABASE_URL e REDIS_URL
+                                # SESSION_SECRET, PASSWORD_PEPPER, POSTGRES_PASSWORD,
+                                # DATABASE_URL e REDIS_URL
 docker compose up -d --build    # api, web (nginx servindo dist), mailpit, postgres (pgvector), redis
 ```
 
-A API sobe em `http://localhost:8000` e a **UI web** em `http://localhost` (nginx na porta 80).
-O Mailpit roda só na rede do compose; para abrir o inbox dev em
-`http://localhost:8025`, publique a porta via
-`docker compose exec mailpit mailpit --help` ou acrescente `ports: ["8025:8025"]`
-ao serviço no `docker-compose.override.yml` local.  Healthchecks: `/livez` e `/readyz`.
+- **API**  → `http://localhost:8000` (todos os `curl` de "Como avaliar" apontam aqui).
+- **UI web** → `http://localhost` (nginx na porta 80 servindo o SPA).
+- **Mailpit** (inbox dev) só na rede do compose; para abri-lo no host, acrescente
+  `ports: ["8025:8025"]` ao serviço num `docker-compose.override.yml` local.
+
+Healthchecks: `GET /healthz` (sempre OK se o processo está vivo) e `GET /readyz` (checa Postgres,
+Redis, modelos e cache).
 
 ### Gerar tokens de teste
 
@@ -192,7 +196,10 @@ jornada por perfil e tracking em [apps/web/PRODUCT.md](apps/web/PRODUCT.md). [RE
   RRF e rerank, guardrails, HITL com retomada, auditoria básica.
 - **Extensões** (em andamento ou planejadas): rate limit + idempotência (US9), fallback de
   modelo (US9), expurgo e LGPD (US9), tracing/métricas/dashboards/eval online (US8),
-  streaming SSE, CI com gates, k6, Ponytail/Impeccable para o front.
+  streaming SSE, CI com gates, k6.
+- **UI web (002)**: entregue (US1 cadastro/login, US2 chat SSE, US3 handoff, US4 histórico,
+  US5 privacidade, US6 admin). Detalhes em [apps/web/PRODUCT.md](apps/web/PRODUCT.md) e
+  [apps/web/DESIGN.md](apps/web/DESIGN.md).
 
 ---
 
@@ -223,7 +230,7 @@ Rastreabilidade **REQ → tarefa → teste → commit**:
 
 - `@pytest.mark.req("REQ-...")` em cada teste.
 - `scripts/check_traceability.py` gera [docs/traceability.md](docs/traceability.md).
-- Commits no formato `feat(T049): descrição [REQ-...]` com `Co-Authored-By: Claude Opus 4.7`.
+- Commits no formato `feat(T049): descrição [REQ-...]`.
 
 ---
 
@@ -307,7 +314,7 @@ curl -s http://localhost:8000/v1/chat \
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests pytest
-# → 296 passed (atual)
+# → 427 passed (atual, pós 002-web-ui)
 ```
 
 ---

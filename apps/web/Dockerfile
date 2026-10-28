@@ -16,7 +16,10 @@ RUN apk add --no-cache curl \
     && adduser  -S -u 1001 -G webapp webapp
 COPY --from=builder /build/dist /usr/share/nginx/html
 COPY --from=builder /build/public/brand /usr/share/nginx/html/brand
-RUN chown -R webapp:webapp /usr/share/nginx/html /var/cache/nginx /var/run \
+# Rodando como webapp (uid 1001), nginx não pode gravar em /var/run/nginx.pid: aponta o pid e os
+# caches internos para /tmp, que é sempre gravável pelo processo.
+RUN sed -i 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
+    && chown -R webapp:webapp /usr/share/nginx/html /var/cache/nginx \
     && chmod -R u=rwX,g=rX /usr/share/nginx/html
 USER webapp
 EXPOSE 80
