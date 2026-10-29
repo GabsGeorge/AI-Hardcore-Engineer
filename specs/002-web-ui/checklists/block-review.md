@@ -93,7 +93,7 @@ da emissão deste relatório. Nenhum achado remanescente de severidade bloqueant
 
 **Não bloqueantes** (ficam no backlog pós-item 5, nesta ordem):
 
-- evals com LLM real em `docs/reports/eval.md` (hoje só degraded_response com dummy key)
+- ~~evals com LLM real em `docs/reports/eval.md` (hoje só degraded_response com dummy key)~~ ✅ run 2026-10-29 em [docs/reports/eval.md](../../../docs/reports/eval.md); 3 achados abertos (handoff route shape, IDOR não bloqueado, PII não mascarada)
 - ~~T170 — rodar `deploy/k6/chat.js` e preencher `docs/reports/load-test.md` com números reais~~ ✅ ea4449d
 - ~~adicionar `getnet.net/en` nas fontes do retriever (inglês hoje depende do PT retrieval)~~ ✅ seeds EN em `src/app/rag/sources.yaml` + q-07/q-08 em `evals/retrieval_labeled.yaml`
 - adicionar fluxo de crediário ao `evals/golden_set.yaml`
