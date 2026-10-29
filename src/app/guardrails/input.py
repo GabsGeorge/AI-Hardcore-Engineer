@@ -81,6 +81,21 @@ _INJECTION_PATTERNS: list[re.Pattern[str]] = [
         r"\b(base64|rot13)\s*[:,]|\b(em\s+rot13|em\s+base64|in\s+base64|in\s+rot13)\b",
         re.IGNORECASE,
     ),
+    # IDOR por identificador de terceiro: menção explícita a dados "do cliente/usuário/lojista
+    # CPF/CNPJ/e-mail" ou verbo de consulta + CPF/CNPJ. O guardrail de identidade (REQ-SEC-02)
+    # já cobre `user_id` divergente no payload, mas o atacante pode tentar via linguagem
+    # natural com um documento no texto.
+    re.compile(
+        r"\b(do|da|de|from|of|belonging\s+to|para)\s+"
+        r"(cliente|usu[áa]rio|customer|merchant|user|conta|account|lojista|outro|other)\b"
+        r".{0,40}?\b(cpf|cnpj|documento|document|e-?mail)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"\b(mostre|exiba|liste|consulte|busque|traga|show|display|list|get|fetch|"
+        r"retrieve|lookup|look\s+up|pull\s+up)\b.{0,80}?\b(cpf|cnpj)\b.{0,10}?\d{3}",
+        re.IGNORECASE | re.DOTALL,
+    ),
 ]
 
 
