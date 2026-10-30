@@ -1,5 +1,7 @@
 # Getnet Multi-Agent Support
 
+[![ci](https://github.com/GabsGeorge/AI-Hardcore-Engineer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GabsGeorge/AI-Hardcore-Engineer/actions/workflows/ci.yml)
+
 Plataforma de atendimento com agentes multi-especialistas para lojistas Getnet. O caminho feliz
 responde em até 8 s por LLM + RAG + tools; falhas, dúvidas sensíveis e ações com efeito colateral
 passam por um fluxo de handoff com retomada humana. **Toda operação roda via `docker compose`

@@ -42,9 +42,9 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
             run --rm tests pytest tests/test_no_stubs.py tests/test_readme.py
       - name: rastreabilidade REQ → task → teste
-        # Fase 3 em andamento: o script é informativo até o fechamento (T168 passa a bloquear
-        # na entrega final, quando todos os REQs entregues têm teste associado).
-        continue-on-error: true
+        # Bloqueante: todo REQ marcado como entregue precisa de pelo menos um teste
+        # associado (@pytest.mark.req). Falhar aqui vira defeito de rastreabilidade,
+        # nao item informativo.
         run: |
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
             run --rm tests python scripts/check_traceability.py
@@ -133,8 +133,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # SPA: deps do package-lock vs CVEs conhecidos.
+      # Pinamos por SHA (nao por tag) para que o CI nao pegue uma retag silenciosa.
       - name: trivy fs apps/web
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           scan-type: fs
           scan-ref: apps/web
@@ -146,7 +147,7 @@ jobs:
           trivyignores: .trivyignore.yaml
       # Raiz: pyproject + uv.lock + Dockerfiles.
       - name: trivy fs raiz (python + docker)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           scan-type: fs
           scan-ref: .
