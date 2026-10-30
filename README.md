@@ -19,11 +19,17 @@ na própria máquina — não há dependência de Python ou `make` no host.**
 Pré-requisitos: Docker Desktop (engine Linux). Nada mais.
 
 ```bash
-cp .env.example .env            # preencha OPENAI_API_KEY, JWT_SECRET (openssl rand -hex 32),
-                                # SESSION_SECRET, PASSWORD_PEPPER, POSTGRES_PASSWORD,
-                                # DATABASE_URL e REDIS_URL
-docker compose up -d --build    # api, web (nginx servindo dist), mailpit, postgres (pgvector), redis
+cp .env.example .env                 # defaults razoaveis ja preenchidos
+bash scripts/bootstrap_env.sh        # gera JWT_SECRET, SESSION_SECRET, PASSWORD_PEPPER,
+                                     # POSTGRES_PASSWORD, GRAFANA_ADMIN_PASSWORD, ADMIN_SEED_PASSWORD
+# unica edicao manual obrigatoria: colar sua OPENAI_API_KEY no .env
+docker compose up -d --build         # api, web (nginx servindo dist), mailpit, postgres (pgvector), redis
 ```
+
+> O script `scripts/bootstrap_env.sh` e idempotente — so preenche campos vazios. Rode de novo
+> sempre que apagar o `.env`. O perfil `obs` (Prometheus + Grafana) e opcional: `docker compose
+> --profile obs up -d` para subir junto; sem o perfil, a stack mínima roda sem exigir
+> `GRAFANA_ADMIN_PASSWORD`.
 
 - **API**  → `http://localhost:8000` (todos os `curl` de "Como avaliar" apontam aqui).
 - **UI web** → `http://localhost` (nginx na porta 80 servindo o SPA).
@@ -241,7 +247,8 @@ Rastreabilidade **REQ → tarefa → teste → commit**:
 ### 1. Subir a stack
 
 ```bash
-cp .env.example .env  # preencha os campos obrigatórios
+cp .env.example .env
+bash scripts/bootstrap_env.sh  # gera todos os segredos; so edite OPENAI_API_KEY manualmente
 docker compose up -d --build
 curl -fsS http://localhost:8000/readyz
 ```
