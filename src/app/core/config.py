@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     password_pepper: SecretStr | None = None
     smtp_url: str = ""
     web_base_url: str = "http://localhost"
-    admin_seed_email: str = "admin@getnet.local"
+    admin_seed_email: str = "admin@getnet.example.com"
     admin_seed_password: SecretStr | None = None
 
     database_url: str

@@ -19,6 +19,13 @@ export function ChatPage() {
   const [conversationId, setConversationId] = useState<string | undefined>(params.id);
   const [retryAt, setRetryAt] = useState<number | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  // Rola para o fim sempre que msg nova chega ou passos do agente aparecem.
+  // Resolve o P1 do e2e-register-flow: o composer sumia abaixo do viewport.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, liveSteps, pending]);
 
   const canSubmit = input.trim().length > 0 && !pending && retryAt === undefined;
 
@@ -51,18 +58,25 @@ export function ChatPage() {
                 const final = data as ChatResponseBody;
                 setConversationId(final.conversation_id);
                 setHandoff(final.handoff);
-                setMessages((previous) => [
-                  ...previous,
-                  {
-                    id: `a-${final.trace_id}`,
-                    role: "assistant",
-                    content: final.response,
-                    agentSteps: final.route,
-                    sources: final.sources,
-                    traceId: final.trace_id,
-                  },
-                ]);
-                announce(final.response);
+                // Suprime bolha vazia em handoff awaiting_human: o HandoffBanner ja comunica
+                // "aguardando atendente". Antes a UI pintava um cartao em branco (P0 do
+                // e2e-register-flow 3b/3c).
+                const hasText = (final.response ?? "").trim().length > 0;
+                const isAwaitingHuman = final.handoff.status === "awaiting_human";
+                if (hasText || !isAwaitingHuman) {
+                  setMessages((previous) => [
+                    ...previous,
+                    {
+                      id: `a-${final.trace_id}`,
+                      role: "assistant",
+                      content: final.response,
+                      agentSteps: final.route,
+                      sources: final.sources,
+                      traceId: final.trace_id,
+                    },
+                  ]);
+                  announce(final.response);
+                }
                 setPending(false);
                 setLiveSteps([]);
               }
@@ -105,6 +119,7 @@ export function ChatPage() {
     <div className="flex flex-col gap-6">
       <HandoffBanner handoff={handoff} slaBreached={false} />
       <MessageList messages={messages} pending={pending} liveSteps={liveSteps} />
+      <div ref={bottomRef} aria-hidden="true" />
       <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-line pt-4">
         <label className="sr-only" htmlFor="chat-input">
           {t("chat.inputLabel")}
