@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Spinner, StatusBadge } from "@/design";
+import { MessageContent } from "./MessageContent";
 import { SourceList } from "./SourceList";
 import type { ChatMessage } from "./types";
 
@@ -35,7 +36,7 @@ export function MessageList({
               </div>
             ) : null}
             <div className="max-w-[80%] rounded-lg border border-line bg-surface-100 p-3 text-body text-ink-700 shadow-1">
-              {message.content}
+              <MessageContent text={message.content} />
             </div>
             {message.sources.length > 0 ? <SourceList sources={message.sources} /> : null}
           </li>
