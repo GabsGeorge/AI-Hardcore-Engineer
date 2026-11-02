@@ -142,6 +142,11 @@ async def register(body: RegisterRequest, request: Request) -> GenericPending:
             pool, email=body.email, display_name=body.display_name, role="merchant"
         )
         await repo.set_password(pool, account.id, passwords.hash_password(body.password))
+        # Cria users+merchants ja vinculados; sem isso o primeiro /v1/chat quebra em FK
+        # (conversations.user_id -> users.id). Ver T002/003-ui-hardening.
+        await repo.create_merchant_for_account(
+            pool, account_id=account.id, display_name=body.display_name
+        )
         token = await one_time_tokens.mint(pool, account_id=account.id, purpose="verify_email")
         await mailer.send_verification(to=body.email, token=token)
         await _audit(

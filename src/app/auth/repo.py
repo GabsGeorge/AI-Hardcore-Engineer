@@ -223,6 +223,34 @@ async def record_login_attempt(pool: Pool, *, email: str, ip: str, outcome: str)
         )
 
 
+async def create_merchant_for_account(
+    pool: Pool,
+    *,
+    account_id: str,
+    display_name: str,
+) -> str:
+    """Cria users+merchants vinculados em uma transacao. Retorna users.id gerado.
+
+    Resolve o Bug 2 do e2e-api.md: /v1/auth/register criava apenas auth_accounts, e o
+    primeiro /v1/chat quebrava com ForeignKeyViolation em conversations.user_id. Aqui a
+    linha de users nasce junto, com defaults de demo para merchants (plano Get Classica).
+    """
+    user_id = f"wusr_{ULID()}"
+    trade_name = display_name.strip() or "Lojista Getnet"
+    async with pool.connection() as conn, conn.transaction():
+        await conn.execute(
+            "INSERT INTO users (id, role, display_name) VALUES (%s, 'merchant', %s)",
+            (user_id, trade_name),
+        )
+        await conn.execute(
+            "INSERT INTO merchants (user_id, trade_name, document_masked, plan,"
+            " settlement_days, anticipation_enabled, account_id)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (user_id, trade_name, "**.***.***/0001-**", "Get Clássica", 30, False, account_id),
+        )
+    return user_id
+
+
 async def link_merchant(pool: Pool, *, merchant_user_id: str, account_id: str) -> bool:
     """``True`` on link; ``False`` when the merchant is already attached to another account.
 
