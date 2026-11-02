@@ -95,6 +95,12 @@ export function openGetStream(path: string, handlers: SseHandlers, signal: Abort
   signal.addEventListener("abort", () => source.close());
 }
 
+// SSE allows events separated by LF-LF or CRLF-CRLF (mixed is also legal per the HTML spec).
+// Starlette's EventSourceResponse emits CRLF; our parser used to look only for LF, and silently
+// dropped every event. See docs/reports/e2e-browser.md achado 3.
+const EVENT_SEPARATOR = /\r?\n\r?\n/;
+const LINE_SEPARATOR = /\r?\n/;
+
 async function readLoop(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   handlers: SseHandlers,
@@ -109,12 +115,12 @@ async function readLoop(
       return;
     }
     buffer += decoder.decode(value, { stream: true });
-    let separator = buffer.indexOf("\n\n");
-    while (separator !== -1) {
-      const chunk = buffer.slice(0, separator);
-      buffer = buffer.slice(separator + 2);
+    let match = EVENT_SEPARATOR.exec(buffer);
+    while (match !== null) {
+      const chunk = buffer.slice(0, match.index);
+      buffer = buffer.slice(match.index + match[0]!.length);
       dispatchChunk(chunk, handlers);
-      separator = buffer.indexOf("\n\n");
+      match = EVENT_SEPARATOR.exec(buffer);
     }
   }
 }
@@ -122,7 +128,7 @@ async function readLoop(
 function dispatchChunk(chunk: string, handlers: SseHandlers): void {
   let event = "message";
   let data = "";
-  for (const line of chunk.split("\n")) {
+  for (const line of chunk.split(LINE_SEPARATOR)) {
     if (line.startsWith("event:")) {
       event = line.slice(6).trim();
     } else if (line.startsWith("data:")) {

@@ -151,6 +151,8 @@ async def chat(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> ChatResponse:
     trace_id: str = request.state.trace_id
+    if user.role != "merchant":
+        raise forbidden("role_not_allowed", "Chat is only available for merchant accounts.")
     await _reject_foreign_user_id(body, user, request, trace_id)
     await check_rate_limit(request, user.id)
     body_dict = body.model_dump(mode="json", exclude_none=True)
@@ -181,6 +183,8 @@ async def chat_stream(
 ) -> EventSourceResponse:
     """SSE variant of /v1/chat: agent_step per node, handoff, then done (contracts/events.md)."""
     trace_id: str = request.state.trace_id
+    if user.role != "merchant":
+        raise forbidden("role_not_allowed", "Chat is only available for merchant accounts.")
     await _reject_foreign_user_id(body, user, request, trace_id)
     await check_rate_limit(request, user.id)
     graph = _graph_or_503(request)
