@@ -27,7 +27,12 @@ ENV PATH=/opt/venv/bin:$PATH \
 WORKDIR /repo
 
 FROM base AS runtime
-RUN useradd --create-home --uid 10001 app
+RUN useradd --create-home --uid 10001 app \
+    # Pre-cria .cache com o dono correto: quando o volume nomeado `models-cache` for montado
+    # pela primeira vez, Docker copia o conteudo + perms da imagem — sem isso, o volume
+    # nasce como root:root e o processo nao-root nao consegue baixar modelos (flashrank, HF).
+    && mkdir -p /home/app/.cache/huggingface /home/app/.cache/flashrank \
+    && chown -R app:app /home/app/.cache
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY src ./src

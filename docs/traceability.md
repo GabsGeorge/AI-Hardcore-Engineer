@@ -23,8 +23,8 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-HITL-05 | T139, T144 | tests/integration/test_sla.py | ✅ |
 | REQ-HITL-06 | T103, T111 | tests/contract/test_handoffs_sort.py, tests/integration/test_hitl.py | ✅ |
 | REQ-INF-01 | T034, T035, T154, T164 | tests/unit/test_obs_profile.py | ✅ |
-| REQ-INF-02 | T033, T164 | - | ✅ |
-| REQ-INF-03 | T035, T164 | - | ✅ |
+| REQ-INF-02 | T033, T164 | tests/test_infra_artifacts.py | ✅ |
+| REQ-INF-03 | T035, T164 | tests/test_infra_artifacts.py | ✅ |
 | REQ-INF-04 | T161, T165, T167, T168 | tests/test_no_stubs.py, tests/unit/test_traceability.py | ✅ |
 | REQ-INF-05 | T003, T008, T036, T037 | tests/test_repo_hygiene.py | ✅ |
 | REQ-INF-06 | T163, T171, T172, T173 | tests/test_readme.py | ✅ |
@@ -55,12 +55,12 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-REL-01 | T097, T134, T140 | tests/integration/test_retriever_resilience.py, tests/integration/test_support_resilience.py, tests/unit/test_resilience.py | ✅ |
 | REQ-REL-02 | T135, T141 | tests/unit/test_fallback.py | ✅ |
 | REQ-REL-03 | T134, T140 | tests/unit/test_resilience.py | ✅ |
-| REQ-REL-04 | T169, T170 | - | ✅ |
+| REQ-REL-04 | T169, T170 | tests/test_infra_artifacts.py | ✅ |
 | REQ-SEC-01 | T009, T013, T019, T027 | tests/security/test_admin_rbac.py, tests/security/test_api_auth.py, tests/security/test_csrf_middleware.py, tests/unit/test_auth.py, tests/unit/test_config.py | ✅ |
 | REQ-SEC-02 | T014, T029, T030, T087 | tests/integration/test_chat_flow.py, tests/integration/test_me_conversations_isolation.py, tests/security/test_conversation_ownership.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-03 | T038, T045, T046, T060, T063, T064, T084 | tests/security/test_injection_identity.py, tests/security/test_tools_identity.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-SEC-04 | T003, T004, T006, T008, T019, T036, T037, T168 | tests/integration/test_metrics.py, tests/test_repo_hygiene.py | ✅ |
-| REQ-SEC-05 | T002, T033, T168 | - | ✅ |
+| REQ-SEC-05 | T002, T033, T168 | tests/test_infra_artifacts.py | ✅ |
 | REQ-SEC-06 | T104, T110 | tests/contract/test_me_conversations.py, tests/integration/test_hitl.py, tests/security/test_handoff_rbac.py | ✅ |
 | REQ-SEC-07 | T029, T064, T128, T129 | tests/contract/test_stream.py, tests/security/test_admin_audit_no_pii.py, tests/security/test_audit.py, tests/security/test_chat_stream_audit_endpoint.py, tests/security/test_security_idor.py | ✅ |
 | REQ-SEC-08 | T136, T142 | tests/security/test_audit.py, tests/security/test_rate_limit.py | ✅ |

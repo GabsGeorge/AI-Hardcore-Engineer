@@ -99,21 +99,24 @@ async def current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> CurrentUser:
-    # Cookie-first: the SPA never carries a Bearer token, so a cookie is tried before falling
-    # back to the legacy header. Both are mutually exclusive in practice.
+    # Bearer-first: coerente com o CSRF middleware, que PULA a checagem quando ha Authorization
+    # Bearer. Se os dois forem enviados (cliente que ja autenticou via cookie e vai a mao com
+    # um JWT no header), o Bearer vence e o cookie e ignorado, para que a mesma requisicao
+    # nao siga regras diferentes nos dois componentes. Clientes do SPA so mandam cookie, entao
+    # a maioria dos requests cai no fallback de cookie.
+    if credentials is not None and credentials.scheme.lower() == "bearer":
+        try:
+            claims = decode_token(credentials.credentials)
+        except AuthError as exc:
+            raise unauthorized() from exc
+        user = await repo.get_user(get_pool(), claims["sub"])
+        if user is None or user["role"] != claims["role"]:
+            raise unauthorized()
+        return CurrentUser(id=user["id"], role=user["role"])
     from_cookie = await _from_cookie(request)
     if from_cookie is not None:
         return from_cookie
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise unauthorized()
-    try:
-        claims = decode_token(credentials.credentials)
-    except AuthError as exc:
-        raise unauthorized() from exc
-    user = await repo.get_user(get_pool(), claims["sub"])
-    if user is None or user["role"] != claims["role"]:
-        raise unauthorized()
-    return CurrentUser(id=user["id"], role=user["role"])
+    raise unauthorized()
 
 
 def require_role(*roles: str) -> Callable[[CurrentUser], CurrentUser]:

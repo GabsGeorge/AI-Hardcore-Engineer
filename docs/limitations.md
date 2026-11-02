@@ -42,6 +42,25 @@ Cada item lista **onde**, **o que** e **o caminho de evolução**.
 - **Evolução**: trocar por `tiktoken` quando o perfil de documento ficar mais longo (ou mudar
   para outro embedding com limite menor).
 
+## 4. CVEs aceitas em `.trivyignore.yaml`
+
+Toda entrada do `.trivyignore.yaml` tem data de expiração; depois dessa data o Trivy volta
+a quebrar a CI. A lista é curta por desenho.
+
+### CVE-2023-54404 — `zod@3.23.8` (SPA)
+
+- **Onde**: [apps/web/package-lock.json](../apps/web/package-lock.json)
+- **O que**: `zod` 3.23.8 tem DoS via array sem limite; o fix é em `zod@4.6.6`.
+- **Por que aceito até 2026-12-15**: migrar `zod` 3.x → 4.x é breaking (schema API muda —
+  `.pick/.omit/.extend` ficam diferentes, `z.string().email()` vira `z.email()`). Todos os
+  schemas do SPA validam inputs pequenos de usuário (login, mensagem de chat, feedback), com
+  rate limit upstream de 30 req/min (REQ-SEC-08); a superfície de DoS real é mínima. A
+  migração vai acompanhada de reescrita de todos os schemas em [apps/web/src/features/](../apps/web/src/features/).
+- **Caminho de resolução**: PR dedicado antes de 2026-12-15, com `zod@4.x` + atualização de
+  todos os `.safeParse` do SPA + regressão da suite Vitest.
+- **Evidência de monitoramento**: a CI roda `trivy fs` em cada PR; qualquer CVE nova HIGH ou
+  CRITICAL que não esteja aqui quebra o pipeline.
+
 ---
 
 ## O que NÃO é shortcut
