@@ -2,10 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Button, Input, useLiveAnnouncer } from "@/design";
+import { api } from "@/lib/api";
 import { streamPost } from "@/lib/sse";
 import { HandoffBanner } from "./HandoffBanner";
 import { MessageList } from "./MessageList";
 import type { ChatMessage, ChatResponseBody, HandoffRef } from "./types";
+
+type ConversationLoad = {
+  conversation_id: string;
+  handoff: HandoffRef;
+  messages: { role: "user" | "assistant"; content: string }[];
+};
 
 export function ChatPage() {
   const { t } = useTranslation();
@@ -26,6 +33,47 @@ export function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, liveSteps, pending]);
+
+  // Hidrata a conversa ao abrir pela URL /chat/:id. Resolve o P0 "conversa abre vazia"
+  // do e2e-register-flow (T020). Troca de id (nav entre conversas) tambem rehidrata.
+  useEffect(() => {
+    if (!params.id) {
+      setMessages([]);
+      setHandoff({ status: "none", ticket_id: null });
+      setConversationId(undefined);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.get<ConversationLoad>(`/v1/conversations/${params.id}`);
+        if (cancelled) return;
+        setConversationId(data.conversation_id);
+        setHandoff(data.handoff);
+        setMessages(
+          data.messages.map((m, i) =>
+            m.role === "assistant"
+              ? {
+                  id: `h-${params.id}-${i}`,
+                  role: "assistant" as const,
+                  content: m.content,
+                  agentSteps: [],
+                  sources: [],
+                  traceId: `h-${params.id}-${i}`,
+                }
+              : { id: `h-${params.id}-${i}`, role: "user" as const, content: m.content },
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setMessages([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   const canSubmit = input.trim().length > 0 && !pending && retryAt === undefined;
 
