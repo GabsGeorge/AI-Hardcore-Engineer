@@ -22,7 +22,7 @@ export function TicketPage() {
     queryFn: () => api.get<QueueResponse>("/v1/handoffs?status=awaiting_human&limit=100"),
     enabled: Boolean(ticket_id),
   });
-  const ticket = list.data?.items.find((row) => row.ticket_id === ticket_id);
+  const ticket = list.data?.items.find((row) => row.id === ticket_id);
 
   const [reply, setReply] = useState("");
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);

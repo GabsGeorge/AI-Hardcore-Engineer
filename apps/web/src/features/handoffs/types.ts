@@ -7,7 +7,7 @@ export type PendingAction = {
 };
 
 export type HandoffRow = {
-  ticket_id: string;
+  id: string;
   conversation_id: string;
   reason: string;
   status: HandoffStatus;
