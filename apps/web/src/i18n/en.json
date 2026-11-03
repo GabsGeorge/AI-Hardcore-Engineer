@@ -46,6 +46,8 @@
     "thinking": "Thinking…",
     "sources": "Sources",
     "rateLimited": "Too many messages within a minute. Wait a moment before sending again.",
+    "handoffLockPlaceholder": "Waiting for a human agent to reply…",
+    "handoffLockHint": "While the ticket is with a human agent, new messages are blocked.",
     "handoff": {
       "waitingTitle": "Waiting for a human agent",
       "waitingBody": "Your request is in the queue as ticket {{ticket}}.",

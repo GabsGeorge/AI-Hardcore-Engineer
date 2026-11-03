@@ -75,7 +75,9 @@ export function ChatPage() {
     };
   }, [params.id]);
 
-  const canSubmit = input.trim().length > 0 && !pending && retryAt === undefined;
+  const handoffLocked = handoff.status === "awaiting_human";
+  const canSubmit =
+    input.trim().length > 0 && !pending && retryAt === undefined && !handoffLocked;
 
   const send = useCallback(
     async (text: string) => {
@@ -167,8 +169,10 @@ export function ChatPage() {
     <div className="flex flex-col gap-6">
       <HandoffBanner handoff={handoff} slaBreached={false} />
       <MessageList messages={messages} pending={pending} liveSteps={liveSteps} />
-      <div ref={bottomRef} aria-hidden="true" />
-      <form onSubmit={onSubmit} className="flex items-end gap-2 border-t border-line pt-4">
+      <form
+        onSubmit={onSubmit}
+        className="sticky bottom-0 flex items-end gap-2 border-t border-line bg-surface-100 pb-2 pt-4"
+      >
         <label className="sr-only" htmlFor="chat-input">
           {t("chat.inputLabel")}
         </label>
@@ -176,8 +180,10 @@ export function ChatPage() {
           id="chat-input"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder={t("chat.inputPlaceholder")}
-          disabled={pending || retryAt !== undefined}
+          placeholder={
+            handoffLocked ? t("chat.handoffLockPlaceholder") : t("chat.inputPlaceholder")
+          }
+          disabled={pending || retryAt !== undefined || handoffLocked}
           aria-busy={pending || undefined}
         />
         <Button type="submit" loading={pending} disabled={!canSubmit}>
@@ -189,6 +195,12 @@ export function ChatPage() {
           {t("chat.rateLimited")}
         </p>
       ) : null}
+      {handoffLocked ? (
+        <p className="text-label text-ink-500" role="status">
+          {t("chat.handoffLockHint")}
+        </p>
+      ) : null}
+      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }
