@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { Button, Input, useLiveAnnouncer } from "@/design";
 import { api } from "@/lib/api";
 import { streamPost } from "@/lib/sse";
@@ -18,6 +18,7 @@ export function ChatPage() {
   const { t } = useTranslation();
   const announce = useLiveAnnouncer();
   const params = useParams<{ id?: string }>();
+  const location = useLocation();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState(false);
@@ -73,7 +74,10 @@ export function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id]);
+    // T031: location.key muda a cada clique no NavLink mesmo para o mesmo /chat,
+    // entao esse useEffect dispara e reseta o estado quando o lojista clica
+    // "Conversar" durante um handoff ativo. Antes o composer ficava preso.
+  }, [params.id, location.key]);
 
   const handoffLocked = handoff.status === "awaiting_human";
   const canSubmit =
@@ -185,6 +189,7 @@ export function ChatPage() {
           }
           disabled={pending || retryAt !== undefined || handoffLocked}
           aria-busy={pending || undefined}
+          className={handoffLocked ? "bg-surface-200 text-ink-400 cursor-not-allowed" : undefined}
         />
         <Button type="submit" loading={pending} disabled={!canSubmit}>
           {t("chat.send")}
