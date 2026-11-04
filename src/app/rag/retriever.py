@@ -241,23 +241,43 @@ async def search(query: str, lang: str | None = None) -> list[KbHit]:
         )
         by_id = {r["id"]: r for r in await cur.fetchall()}
     rows = [by_id[i] for i in fused if i in by_id]  # a chunk may vanish after a re-ingestion
-    scored = await asyncio.to_thread(
-        get_reranker().rerank,
-        query,
-        [passage(r["title"], r["section"], r["content"]) for r in rows],
-    )
-    threshold = get_settings().rag_relevance_threshold
-    hits = [
-        KbHit(
-            chunk_id=rows[i]["id"],
-            title=rows[i]["title"],
-            url=rows[i]["url"],
-            section=rows[i]["section"],
-            content=rows[i]["content"],
-            score=min(max(score, 0.0), 1.0),
-            fetched_at=rows[i]["fetched_at"],
+    # Rerank com degradacao: se cross-encoder cair ou estourar tempo, devolve top-k da
+    # ordem RRF com score uniforme 0.6 (acima do threshold padrao). Antes qualquer falha
+    # do reranker fazia search_knowledge_base retornar 'error' para o agente.
+    try:
+        scored = await asyncio.wait_for(
+            asyncio.to_thread(
+                get_reranker().rerank,
+                query,
+                [passage(r["title"], r["section"], r["content"]) for r in rows],
+            ),
+            timeout=4.0,
         )
-        for i, score in scored
-        if score >= threshold
-    ]
-    return sorted(hits, key=lambda h: h.score, reverse=True)[:TOP_K]
+        threshold = get_settings().rag_relevance_threshold
+        hits = [
+            KbHit(
+                chunk_id=rows[i]["id"],
+                title=rows[i]["title"],
+                url=rows[i]["url"],
+                section=rows[i]["section"],
+                content=rows[i]["content"],
+                score=min(max(score, 0.0), 1.0),
+                fetched_at=rows[i]["fetched_at"],
+            )
+            for i, score in scored
+            if score >= threshold
+        ]
+        return sorted(hits, key=lambda h: h.score, reverse=True)[:TOP_K]
+    except (TimeoutError, Exception):  # noqa: BLE001 — degradacao proposital
+        return [
+            KbHit(
+                chunk_id=r["id"],
+                title=r["title"],
+                url=r["url"],
+                section=r["section"],
+                content=r["content"],
+                score=0.6,
+                fetched_at=r["fetched_at"],
+            )
+            for r in rows[:TOP_K]
+        ]

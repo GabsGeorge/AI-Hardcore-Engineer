@@ -14,6 +14,16 @@ services:
       POSTGRES_USER: app
       POSTGRES_DB: app
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    # Tunagem para maquinas com RAM apertada (ex.: WSL2 4GB). shared_buffers padrao
+    # seria 128MB mas a conexao custa tambem; mantemos 128MB e limitamos conexoes.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=4MB
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -21,14 +31,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    mem_limit: 512m
+    cpus: 1.0
 
   redis:
     image: redis:7.4.1-alpine
+    command: ["redis-server", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
+    mem_limit: 128m
+    cpus: 0.5
 
   ingest:
     build: { context: ., target: runtime }
@@ -38,6 +53,8 @@ services:
       - models-cache:/home/app/.cache
     depends_on:
       postgres: { condition: service_healthy }
+    mem_limit: 1g
+    cpus: 2.0
 
   api:
     build: { context: ., target: runtime }
@@ -53,6 +70,10 @@ services:
       ingest: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
       mailpit: { condition: service_started }
+    # Comporta embedding + rerank cross-encoder (~150MB modelo + numpy) + httpx pools.
+    # Em maquina com 8GB RAM total + WSL2 4GB, cobre o cenario sem OOM do postgres.
+    mem_limit: 1536m
+    cpus: 2.0
 
   mailpit:
     image: axllent/mailpit:v1.21.5
@@ -65,6 +86,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+    mem_limit: 64m
+    cpus: 0.25
 
   web:
     build:
@@ -81,6 +104,8 @@ services:
       interval: 15s
       timeout: 3s
       retries: 5
+    mem_limit: 128m
+    cpus: 0.5
 
   # --- Perfil `obs`: observabilidade (prometheus, grafana) -------------------------------
   prometheus:
