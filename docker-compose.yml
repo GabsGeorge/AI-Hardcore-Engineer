@@ -31,18 +31,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    mem_limit: 512m
+    mem_limit: 384m
     cpus: 1.0
 
   redis:
     image: redis:7.4.1-alpine
-    command: ["redis-server", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
-    mem_limit: 128m
+    mem_limit: 96m
     cpus: 0.5
 
   ingest:
@@ -70,10 +70,11 @@ services:
       ingest: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
       mailpit: { condition: service_started }
-    # Comporta embedding + rerank cross-encoder (~150MB modelo + numpy) + httpx pools.
-    # Em maquina com 8GB RAM total + WSL2 4GB, cobre o cenario sem OOM do postgres.
-    mem_limit: 1536m
-    cpus: 2.0
+    # Comporta embedding + rerank cross-encoder (~500MB modelo descarregado + numpy) + httpx
+    # pools. 1.5G era insuficiente e matava o container por OOM (exit 137). 2G cabe dentro
+    # do WSL2 4GB junto com postgres 384M + redis 96M + web 96M + mailpit 48M = ~2.6GB total.
+    mem_limit: 2g
+    cpus: 2.5
 
   mailpit:
     image: axllent/mailpit:v1.21.5
@@ -86,7 +87,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
-    mem_limit: 64m
+    mem_limit: 48m
     cpus: 0.25
 
   web:
@@ -104,7 +105,7 @@ services:
       interval: 15s
       timeout: 3s
       retries: 5
-    mem_limit: 128m
+    mem_limit: 96m
     cpus: 0.5
 
   # --- Perfil `obs`: observabilidade (prometheus, grafana) -------------------------------
