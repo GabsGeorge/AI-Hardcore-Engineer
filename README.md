@@ -96,6 +96,15 @@ Diagrama completo em [docs/architecture.drawio](docs/architecture.drawio).
 4. **Rerank** com FlashRank (cross-encoder) em cima do top-fused.
 5. Nó Knowledge compõe a resposta com citações; grounding verificado no guardrail de saída.
 
+Métricas medidas no conjunto rotulado (16 queries, 239 chunks) — detalhes em
+[ADR 0003 — Métricas](docs/adr/0003-busca-hibrida.md#métricas-medidas):
+
+| Estratégia       | recall@5 | MRR   | nDCG@5 |
+|------------------|----------|-------|--------|
+| densa            | 0,813    | 0,708 | 0,695  |
+| híbrida (RRF)    | 0,688    | 0,667 | 0,610  |
+| híbrida + rerank | 0,375    | 0,354 | 0,291  |
+
 ### Guardrails
 
 - **Entrada** ([src/app/guardrails/input.py](src/app/guardrails/input.py)):

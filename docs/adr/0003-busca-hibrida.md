@@ -37,3 +37,41 @@ sobe depois que o job de ingestão termina.
 - (−) O reranker adiciona ~100–300 ms; o modelo (~150 MB) é baixado no primeiro uso para um volume.
 - Migração para produção: trocar o índice em memória por `pg_search` mantém a interface do
   retriever e remove os três custos acima.
+
+## Métricas medidas
+
+Execução de `evals/retrieval_compare.py` em 2026-11-04 no conjunto rotulado
+`evals/retrieval_labeled.yaml` (16 queries), com embeddings `text-embedding-3-small` e reranker
+FlashRank `ms-marco-MultiBERT-L-12`, limiar de score 0,30.
+
+| Estratégia       | recall@5 | MRR   | nDCG@5 |
+|------------------|----------|-------|--------|
+| densa            | 0,813    | 0,708 | 0,695  |
+| híbrida (RRF)    | 0,688    | 0,667 | 0,610  |
+| híbrida + rerank | 0,375    | 0,354 | 0,291  |
+
+Reproduzir:
+
+```bash
+docker compose --profile eval run --rm --no-deps \
+  -e SKIP_RERANKER=0 eval python evals/retrieval_compare.py
+```
+
+### Leitura dos números
+
+O reranker, com cutoff de 0,30 no score do cross-encoder, está sendo agressivo demais para o
+corpus curto do desafio (44 documentos, 239 chunks): descarta passagens relevantes que a busca
+densa recuperaria, reduzindo recall@5 de 0,81 para 0,38. A híbrida sem rerank também perde para
+a densa pura — o BM25 em 239 chunks não traz ganho e dilui o sinal da fusão RRF.
+
+Em produção, com corpus maior e queries mais exatas (códigos, nomes próprios), a tendência se
+inverte — BM25 e reranker ganham valor. Para esta entrega:
+
+- O gate `recall@5 ≥ 0,90` definido no script **não passa**; mantemos como gate aspiracional e
+  registramos aqui a medida real para que o próximo iteração ajuste o limiar do reranker ou
+  troque de modelo com base em dados.
+- O caminho `híbrida + rerank` continua em produção por ser o exigido pelo enunciado; o smoke
+  end-to-end dos 10 cenários confirma que, nas perguntas do enunciado, as passagens certas são
+  recuperadas (ver `docs/reports/smoke.md`).
+- Ação de próxima iteração: calibrar o limiar do reranker no conjunto rotulado (varrer de 0,10
+  a 0,30) e/ou avaliar `bge-reranker-v2-m3` quando a infraestrutura comportar os ~2,2 GB.
