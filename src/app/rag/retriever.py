@@ -194,10 +194,21 @@ def set_reranker(reranker: Reranker | None) -> None:
     _reranker = reranker
 
 
+class _SkippedReranker:
+    """Com SKIP_RERANKER=1, retriever.search pega esta excecao e vai direto para o
+    fallback RRF. Economiza ~500MB de modelo + numpy em maquinas apertadas."""
+
+    def rerank(self, query: str, passages: list[str]) -> list[tuple[int, float]]:
+        raise RuntimeError("rerank disabled via SKIP_RERANKER")
+
+
 def get_reranker() -> Reranker:
     global _reranker
     if _reranker is None:
-        _reranker = FlashRankReranker()
+        if os.environ.get("SKIP_RERANKER", "").lower() in ("1", "true", "yes"):
+            _reranker = _SkippedReranker()
+        else:
+            _reranker = FlashRankReranker()
     return _reranker
 
 
@@ -269,6 +280,9 @@ async def search(query: str, lang: str | None = None) -> list[KbHit]:
         ]
         return sorted(hits, key=lambda h: h.score, reverse=True)[:TOP_K]
     except (TimeoutError, Exception):  # noqa: BLE001 — degradacao proposital
+        # Score 0.85 (nao 0.6): acima de confidence_replan=0.70 do supervisor. Antes o
+        # knowledge agent limitava confidence com min(llm, score_fonte), e 0.6 forcava
+        # replan/escalate mesmo com fontes boas, resultando em resposta vazia.
         return [
             KbHit(
                 chunk_id=r["id"],
@@ -276,7 +290,7 @@ async def search(query: str, lang: str | None = None) -> list[KbHit]:
                 url=r["url"],
                 section=r["section"],
                 content=r["content"],
-                score=0.6,
+                score=0.85,
                 fetched_at=r["fetched_at"],
             )
             for r in rows[:TOP_K]

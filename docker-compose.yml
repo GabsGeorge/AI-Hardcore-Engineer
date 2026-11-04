@@ -58,7 +58,16 @@ services:
 
   api:
     build: { context: ., target: runtime }
-    <<: *app-env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:-}@postgres:5432/app
+      REDIS_URL: redis://redis:6379/0
+      # Em maquina apertada (<=8GB RAM), o cross-encoder FlashRank inflava a api
+      # alem do mem_limit e disparava OOM 137. Com SKIP_RERANKER=1 o retriever
+      # usa so BM25+densa (RRF) com score 0.85 no fallback.
+      SKIP_RERANKER: "${SKIP_RERANKER:-1}"
     expose: ["8000"]
     ports:
       # Publicada para scripts/curls e carga (k6, scripts/issue_token.py). O nginx (web) segue

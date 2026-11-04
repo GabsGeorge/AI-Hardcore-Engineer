@@ -35,19 +35,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.graph = build_graph(checkpointer)
     app.state.redis = Redis.from_url(settings.redis_url)
     app.state.scheduler_task = await start_scheduler(pool, app.state.graph)
-    # Aquece o cross-encoder em background: nao bloqueia startup, e remove o cold hit
-    # de ~1-3s da primeira chamada a search_knowledge_base. Se a carga falhar, o
-    # retriever degrada para RRF sem rerank (ver retriever.search).
-    from app.rag import retriever as _retriever
+    # Aquece o cross-encoder em background APENAS quando SKIP_RERANKER nao esta setado.
+    # Em maquinas apertadas (ex.: 8GB RAM) o FlashRank + numpy inflam a api para alem do
+    # mem_limit e o kernel mata o container (OOM 137). SKIP_RERANKER=1 deixa o retriever
+    # cair direto no fallback RRF (ver retriever.search), que ainda devolve fontes
+    # ordenadas por BM25 + densa com score 0.85.
+    import os
 
-    async def _warm() -> None:
-        try:
-            await asyncio.to_thread(_retriever.warm_reranker)
-            get_logger().info("reranker_warmed")
-        except Exception as exc:  # noqa: BLE001 — log e segue
-            get_logger().warning("reranker_warm_failed", error=str(exc)[:200])
+    if os.environ.get("SKIP_RERANKER", "").lower() not in ("1", "true", "yes"):
+        from app.rag import retriever as _retriever
 
-    app.state.warm_task = asyncio.create_task(_warm())
+        async def _warm() -> None:
+            try:
+                await asyncio.to_thread(_retriever.warm_reranker)
+                get_logger().info("reranker_warmed")
+            except Exception as exc:  # noqa: BLE001 — log e segue
+                get_logger().warning("reranker_warm_failed", error=str(exc)[:200])
+
+        app.state.warm_task = asyncio.create_task(_warm())
+    else:
+        get_logger().info("reranker_skipped_env")
     if settings.metrics_port:
         # Separate port, not published by compose: only Prometheus on the internal network scrapes.
         start_http_server(settings.metrics_port)

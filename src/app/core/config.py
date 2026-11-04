@@ -36,8 +36,13 @@ class Settings(BaseSettings):
 
     max_steps: int = Field(6, ge=1)
     token_budget_per_run: int = Field(20_000, ge=1)
-    confidence_replan: float = Field(0.70, ge=0, le=1)
-    confidence_escalate_hard: float = Field(0.40, ge=0, le=1)
+    # Thresholds afrouxados para evitar escalate sistematico. Antes: replan=0.70,
+    # escalate=0.40 — o knowledge LLM frequentemente reportava confidence 0.5-0.6
+    # (hedge) e o supervisor escalava em vez de responder. Agora o lojista recebe
+    # a resposta quando o agente tem material confiavel, mesmo que o modelo tenha
+    # hedgeado.
+    confidence_replan: float = Field(0.50, ge=0, le=1)
+    confidence_escalate_hard: float = Field(0.25, ge=0, le=1)
     rag_relevance_threshold: float = Field(0.30, ge=0, le=1)
 
     rate_limit_per_min: int = Field(30, ge=1)
