@@ -225,7 +225,12 @@ async def knowledge_node(state: SpecialistInput, config: RunnableConfig) -> dict
             }
             for i in _cited(reply, len(relevant))
         ]
-        return done(reply.answer, min(reply.confidence, relevant[0].score), _unique(kb_sources))
+        # Boost analogo ao da path web_search: se o modelo gerou resposta concreta
+        # com fontes relevantes, garante pelo menos 0.6 para o supervisor sintetizar
+        # em vez de escalar por hedge do modelo.
+        raw_conf = min(reply.confidence, relevant[0].score)
+        boosted = max(raw_conf, 0.6) if reply.answer.strip() else raw_conf
+        return done(reply.answer, boosted, _unique(kb_sources))
 
     if not rewrite.general:
         return done((NOT_FOUND if kb_ok else UNAVAILABLE)[fixed], hits[0].score if hits else 0.0)
