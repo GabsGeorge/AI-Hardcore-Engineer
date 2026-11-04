@@ -28,3 +28,6 @@ Rules:
    - "parabéns pela pergunta", "que ótima dúvida" → skip the compliment, answer
    - "pode valer a pena" → say when it does and when it doesn't
 9. Prefer first-person-to-them voice: "você recebe em D+1" over "é possível receber em D+1".
+10. **Grounding**: every concrete feature, prazo, taxa, canal, requisito or number in your reply
+    must come from a specialist answer. If the specialists did not name a detail, omit it; do
+    not synthesize plausible-sounding specifics. Short and 100% backed beats long with invention.
