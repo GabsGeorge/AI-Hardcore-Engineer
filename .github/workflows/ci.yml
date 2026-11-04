@@ -135,7 +135,7 @@ jobs:
       # SPA: deps do package-lock vs CVEs conhecidos.
       # Pinamos por SHA (nao por tag) para que o CI nao pegue uma retag silenciosa.
       - name: trivy fs apps/web
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: apps/web
@@ -147,7 +147,7 @@ jobs:
           trivyignores: .trivyignore.yaml
       # Raiz: pyproject + uv.lock + Dockerfiles.
       - name: trivy fs raiz (python + docker)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .

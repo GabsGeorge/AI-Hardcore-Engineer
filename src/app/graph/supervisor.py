@@ -129,6 +129,11 @@ async def supervisor(state: AgentState, config: RunnableConfig) -> Command[Any]:
             "summary": "",
             "pending_action": None,
         }
+        # Marca 'escalation' no route_trace antes do interrupt(). Sem isso, o eval
+        # reportava 'escalation' ausente na rota (achado 1 do eval.md) porque o
+        # escalation_node pausa com interrupt e nunca chega a emitir o seu proprio
+        # route_trace na primeira passada.
+        update["route_trace"] = ["supervisor", "escalation"]
         return Command(goto="escalation", update=update)
     if decision == "replan":
         # Replan with a second strategy: give the planner the history of what did not work so

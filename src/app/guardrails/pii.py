@@ -56,9 +56,13 @@ def _valid_card(text: str) -> bool:
 
 
 # Phone runs before card so "+55 51 99876-5432" is never read as a 13-digit card number.
+# CPF e CNPJ aceitam match estrutural (11/14 digitos no formato correto) sem Luhn: um
+# lojista que digita um CPF ficticio (111.111.111-11, 000.000.000-00) tambem deve ter o
+# dado mascarado. Antes o Luhn falhava e a mensagem ia crua para o LLM (achado 3 eval.md).
+# Cartao mantem Luhn: codigos numericos de 13-19 digitos seriam falsos positivos demais.
 _RULES: list[tuple[str, str, re.Pattern[str], Callable[[str], bool]]] = [
-    ("cnpj", "[CNPJ]", _CNPJ, _valid_cnpj),
-    ("cpf", "[CPF]", _CPF, _valid_cpf),
+    ("cnpj", "[CNPJ]", _CNPJ, lambda _: True),
+    ("cpf", "[CPF]", _CPF, lambda _: True),
     ("email", "[EMAIL]", _EMAIL, lambda _: True),
     ("phone", "[TELEFONE]", _PHONE, lambda _: True),
     ("card", "[CARTAO]", _CARD, _valid_card),
