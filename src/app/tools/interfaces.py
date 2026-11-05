@@ -187,7 +187,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
 }
 
 TIMEOUT_SECONDS: dict[str, float] = {
-    "search_knowledge_base": 5.0,
+    # KB: embedding OpenAI (~1-2s) + rerank cross-encoder CPU (~1-3s) + BM25 build na
+    # 1a chamada (~1-5s cold). 5s era apertado e dava timeout sistematico no 1o turno
+    # da sessao (regressao batch5: 4 timeouts por pergunta). 10s cobre cold start.
+    "search_knowledge_base": 10.0,
     "web_search": 5.0,
     "get_settlement_schedule": 2.0,
     "diagnose_terminal": 2.0,

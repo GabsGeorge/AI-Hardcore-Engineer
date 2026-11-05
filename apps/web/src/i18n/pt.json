@@ -46,6 +46,8 @@
     "thinking": "Pensando…",
     "sources": "Fontes",
     "rateLimited": "Muitas mensagens em um minuto. Aguarde um instante antes de enviar de novo.",
+    "handoffLockPlaceholder": "Aguardando atendente responder…",
+    "handoffLockHint": "Enquanto o chamado está em atendimento humano, novas mensagens ficam bloqueadas.",
     "handoff": {
       "waitingTitle": "Aguardando atendente",
       "waitingBody": "Seu pedido entrou na fila com o número {{ticket}}.",

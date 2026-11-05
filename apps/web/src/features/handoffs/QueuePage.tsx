@@ -34,10 +34,10 @@ export function QueuePage() {
       <h1 className="text-display text-ink-900">{t("queue.title")}</h1>
       <ul className="flex flex-col gap-2">
         {items.map((item) => (
-          <li key={item.ticket_id}>
+          <li key={item.id}>
             <button
               type="button"
-              onClick={() => navigate(`/queue/${item.ticket_id}`)}
+              onClick={() => navigate(`/queue/${item.id}`)}
               className="w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-support"
             >
               <Card>

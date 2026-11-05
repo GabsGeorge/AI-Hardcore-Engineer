@@ -7,9 +7,11 @@ import hmac
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.auth import CurrentUser, current_user
+from app.api.chat import graph_config
 from app.api.schemas import FeedbackRequest
 from app.auth import passwords
 from app.auth import repo as auth_repo
@@ -18,6 +20,8 @@ from app.core.config import get_settings
 from app.core.errors import AppError, unauthorized
 from app.db import repo
 from app.db.pool import get_pool
+
+_PREVIEW_MAX = 120
 
 router = APIRouter()
 
@@ -37,6 +41,7 @@ class ConversationList(BaseModel):
 
 @router.get("/v1/me/conversations", response_model=ConversationList)
 async def my_conversations(
+    request: Request,
     user: CurrentUser = Depends(current_user),
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
@@ -48,6 +53,25 @@ async def my_conversations(
         get_pool(), user_id=user.id, limit=limit, cursor=cursor
     )
     next_cursor = items[-1].last_activity_at if len(items) == limit else None
+    # Preview: ultima mensagem do lojista extraida do checkpointer. Antes vinha vazia
+    # (T021/003-ui-hardening) e a UI mostrava "(sem previa disponivel)" sempre.
+    graph = request.app.state.graph
+    previews: dict[str, str] = {}
+    if graph is not None:
+        trace_id = getattr(request.state, "trace_id", "")
+        for it in items:
+            try:
+                state = await graph.aget_state(graph_config(user.id, it.id, trace_id))
+            except Exception:  # noqa: BLE001, S112 — best-effort; previa vazia e aceitavel
+                continue
+            messages = (state.values or {}).get("messages") or []
+            for m in reversed(messages):
+                if isinstance(m, HumanMessage) and isinstance(m.content, str):
+                    text = m.content.strip()
+                    previews[str(it.id)] = (
+                        text[:_PREVIEW_MAX] + "…" if len(text) > _PREVIEW_MAX else text
+                    )
+                    break
     return ConversationList(
         items=[
             ConversationSummary(
@@ -55,7 +79,7 @@ async def my_conversations(
                 started_at=it.started_at,
                 last_activity_at=it.last_activity_at,
                 handoff_status=it.handoff_status,
-                last_message_preview=it.last_message_preview,
+                last_message_preview=previews.get(str(it.id), it.last_message_preview),
             )
             for it in items
         ],

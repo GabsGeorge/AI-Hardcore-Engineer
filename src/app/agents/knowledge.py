@@ -146,6 +146,37 @@ async def knowledge_node(state: SpecialistInput, config: RunnableConfig) -> dict
         "knowledge_rewrite", QueryRewrite, rewrite_prompt, f"Question:\n{question}"
     )
     rewrite = rewrite or QueryRewrite()
+    # Allowlist restrita de topicos gerais que o merchant pode legitimamente perguntar
+    # (clima + cambio). O enunciado so cobre esses dois casos via web_search; qualquer
+    # outro assunto fora de Getnet deve cair em out_of_scope mesmo que o guardrail
+    # tenha falhado (defense-in-depth). Antes o agente respondia sobre futebol,
+    # politica, celebridades etc, quebrando escopo e seguranca.
+    _general_keywords = (
+        "clima",
+        "tempo",
+        "previsao",
+        "previsão",
+        "weather",
+        "forecast",
+        "cambio",
+        "câmbio",
+        "cotacao",
+        "cotação",
+        "euro",
+        "dolar",
+        "dólar",
+        "dollar",
+        "exchange",
+        "currency",
+    )
+    question_lower = question.lower()
+    is_allowed_general = any(k in question_lower for k in _general_keywords)
+    if not rewrite.general and is_allowed_general:
+        rewrite = QueryRewrite(variants=rewrite.variants, general=True)
+    elif rewrite.general and not is_allowed_general:
+        # Modelo marcou como geral mas nao bate com a allowlist: forca general=False
+        # para nao chamar web_search em assunto fora de escopo.
+        rewrite = QueryRewrite(variants=rewrite.variants, general=False)
     queries = list(
         dict.fromkeys([(question[:500], None), *((v.query, v.lang) for v in rewrite.variants)])
     )
@@ -170,7 +201,11 @@ async def knowledge_node(state: SpecialistInput, config: RunnableConfig) -> dict
         )
         return {"results": [result], "route_trace": ["knowledge"], "tokens_used": tokens}
 
-    if relevant:
+    # Perguntas publicas (clima, cambio) sempre via web_search: KB tem so conteudo Getnet e
+    # o fallback RRF forca scores artificiais, entao hits de maquininha/Pix apareciam como
+    # 'relevantes' para uma pergunta de clima e o modelo tentava responder com material
+    # errado. Com general=True, pula direto para a rota de web_search.
+    if relevant and not rewrite.general:
         items = [(f"{h.title} — {h.section} ({h.url})", h.content) for h in relevant]
         reply, used = await _structured(
             "knowledge",
@@ -190,7 +225,12 @@ async def knowledge_node(state: SpecialistInput, config: RunnableConfig) -> dict
             }
             for i in _cited(reply, len(relevant))
         ]
-        return done(reply.answer, min(reply.confidence, relevant[0].score), _unique(kb_sources))
+        # Boost analogo ao da path web_search: se o modelo gerou resposta concreta
+        # com fontes relevantes, garante pelo menos 0.6 para o supervisor sintetizar
+        # em vez de escalar por hedge do modelo.
+        raw_conf = min(reply.confidence, relevant[0].score)
+        boosted = max(raw_conf, 0.6) if reply.answer.strip() else raw_conf
+        return done(reply.answer, boosted, _unique(kb_sources))
 
     if not rewrite.general:
         return done((NOT_FOUND if kb_ok else UNAVAILABLE)[fixed], hits[0].score if hits else 0.0)
@@ -223,4 +263,9 @@ async def knowledge_node(state: SpecialistInput, config: RunnableConfig) -> dict
         }
         for i in _cited(reply, len(results))
     ]
-    return done(reply.answer, min(reply.confidence, 1.0), _unique(web_sources))
+    # Boost de confidence para resposta via web_search: se o modelo gerou uma resposta
+    # concreta (nao vazia e nao-NOT_FOUND), garantimos pelo menos 0.6 para o supervisor
+    # nao escalar atoa. Antes qualquer hedge do modelo caia abaixo do escalate_hard
+    # e a pergunta de clima/cambio ficava sem resposta.
+    boosted = max(reply.confidence, 0.6) if reply.answer.strip() else reply.confidence
+    return done(reply.answer, min(boosted, 1.0), _unique(web_sources))

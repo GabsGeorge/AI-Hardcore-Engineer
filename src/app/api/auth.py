@@ -39,6 +39,7 @@ class AuthError(Exception):
 class CurrentUser:
     id: str
     role: str
+    account_id: str | None = None  # Original acc_*; None para Bearer legado em usuário seed
 
 
 def create_token(sub: str, role: str, ttl_seconds: int = 3600) -> str:
@@ -85,14 +86,32 @@ async def _from_cookie(request: Request) -> CurrentUser | None:
     account = await auth_repo.get_account_by_id(get_pool(), claims.account_id)
     if account is None or account.status != "active" or account.role != claims.role:
         raise unauthorized()
-    # Lojistas: traduz acc_* para a users.id ligada ao merchant (quando houver vínculo). O graph
-    # da 001 e as tools continuam vendo o identificador do seed, nada muda do ADR 0005.
+    # Traduz acc_* para a users.id correspondente. Para merchants, usa o vínculo
+    # merchants.account_id. Para operator/admin (sem tabela de vínculo própria),
+    # faz lookup por role na seed de users da 001 — essa é a referência que o grafo
+    # e os FKs de conversations/handoffs esperam. Sem essa tradução, qualquer
+    # operação dessas roles bate em ForeignKeyViolation.
     user_id: str = account.id
     if account.role == "merchant":
         linked = await auth_repo.merchant_user_id_for(get_pool(), account.id)
         if linked is not None:
             user_id = linked
-    return CurrentUser(id=user_id, role=account.role)
+    else:
+        linked = await _seed_user_for_role(account.role)
+        if linked is not None:
+            user_id = linked
+    return CurrentUser(id=user_id, role=account.role, account_id=account.id)
+
+
+async def _seed_user_for_role(role: str) -> str | None:
+    """Primeiro users.id ativo da role dada. Enquanto a 002 não introduzir uma
+    tabela operators/admins com vínculo explícito, usamos a seed da 001 como fonte."""
+    pool = get_pool()
+    async with pool.connection() as conn:
+        row = await (
+            await conn.execute("SELECT id FROM users WHERE role = %s ORDER BY id LIMIT 1", (role,))
+        ).fetchone()
+    return row["id"] if row else None
 
 
 async def current_user(
