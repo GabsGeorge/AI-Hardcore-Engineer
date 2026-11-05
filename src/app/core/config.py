@@ -43,7 +43,12 @@ class Settings(BaseSettings):
     # hedgeado.
     confidence_replan: float = Field(0.50, ge=0, le=1)
     confidence_escalate_hard: float = Field(0.25, ge=0, le=1)
-    rag_relevance_threshold: float = Field(0.30, ge=0, le=1)
+    # 0.0: o reranker funciona como re-ordenador, nao como filtro. O cross-encoder em PT
+    # dava scores baixos para passagens relevantes e derrubava recall@5 de 0,77 (so hybrid)
+    # para 0,38 (hybrid+rerank). Com 0.0 mantemos todas as passagens fundidas e usamos o
+    # score do reranker apenas para desempate quando ha sinal. Evidencia em
+    # evals/retrieval_compare.py (recall@5=0.90+, MRR=0.75+).
+    rag_relevance_threshold: float = Field(0.0, ge=0, le=1)
 
     rate_limit_per_min: int = Field(30, ge=1)
     handoff_sla_minutes: int = Field(15, ge=1)
