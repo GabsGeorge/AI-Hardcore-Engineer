@@ -31,7 +31,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    mem_limit: 384m
+    # 384m aguenta a stack em runtime mas crashou durante os evals de retrieval, onde o
+    # reranker (eval container) carrega todos os embeddings + chunks simultaneamente.
+    # 768m dá folga sem sacrificar o budget de 4GB da WSL2.
+    mem_limit: 768m
     cpus: 1.0
 
   redis:

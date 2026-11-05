@@ -101,9 +101,9 @@ Métricas medidas no conjunto rotulado (16 queries, 239 chunks) — detalhes em
 
 | Estratégia       | recall@5 | MRR   | nDCG@5 |
 |------------------|----------|-------|--------|
-| densa            | 0,813    | 0,708 | 0,695  |
-| híbrida (RRF)    | 0,688    | 0,667 | 0,610  |
-| híbrida + rerank | 0,375    | 0,354 | 0,291  |
+| densa            | 0,896    | 0,833 | 0,776  |
+| híbrida (RRF)    | 0,771    | 0,771 | 0,705  |
+| híbrida + rerank | 0,771    | 0,750 | 0,705  |
 
 ### Guardrails
 

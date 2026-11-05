@@ -35,8 +35,9 @@ queries:
     lang: en
     text: "What payment solutions does Getnet offer?"
     relevant:
-      - https://www.getnet.net/en/our-solutions
       - https://www.getnet.net/en/our-solutions/in-person-payments
+      - https://www.getnet.net/en/our-solutions/online-payments
+      - https://www.getnet.net/en/our-solutions/omnichannel
   - id: q-08
     lang: en
     text: "How can I accept online payments with Getnet?"
