@@ -109,13 +109,20 @@ async def output_guardrail(state: AgentState) -> dict[str, Any]:
         rewritten = True
 
     # Barrier 3: grounding check only when the reply came from Knowledge WITH sources.
+    # Pulamos a checagem quando o Knowledge veio com citacoes [N] e confidence >= 0.70:
+    # o agente ja validou as fontes, e a checagem LLM so com title+url (sem conteudo)
+    # vinha dando falso-positivo e bloqueando respostas corretas (QA 2026-11-05).
     knowledge_with_sources = [
         r
         for r in results
         if r.get("agent") == "knowledge" and not r.get("error") and r.get("sources")
     ]
+    confident_with_citations = any(
+        r.get("confidence", 0.0) >= 0.70 and re.search(r"\[\d+\]", r.get("answer", ""))
+        for r in knowledge_with_sources
+    )
     blocked = False
-    if knowledge_with_sources and not rewritten:
+    if knowledge_with_sources and not rewritten and not confident_with_citations:
         grounded = await _check_grounding(masked_final, knowledge_with_sources)
         if grounded is False:
             masked_final = _UNGROUNDED.get(language, _UNGROUNDED["pt"])

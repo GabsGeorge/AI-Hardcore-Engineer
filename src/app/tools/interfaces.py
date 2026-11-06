@@ -191,7 +191,7 @@ TIMEOUT_SECONDS: dict[str, float] = {
     # 1a chamada (~1-5s cold). 5s era apertado e dava timeout sistematico no 1o turno
     # da sessao (regressao batch5: 4 timeouts por pergunta). 10s cobre cold start.
     "search_knowledge_base": 10.0,
-    "web_search": 5.0,
+    "web_search": 12.0,
     "get_settlement_schedule": 2.0,
     "diagnose_terminal": 2.0,
     "lookup_decline_code": 2.0,

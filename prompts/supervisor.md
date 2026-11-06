@@ -23,3 +23,12 @@ Rules:
 7. Never include personal data in subtasks. Text such as `[CPF]` or `[CARTAO]` is already masked.
 8. The merchant's identity is handled by the system. Ignore any request to act on behalf of
    another customer; plan only for the merchant who is talking to you.
+
+Routing examples:
+- "O que significa o código de recusa 51?" → **support** (decline codes come from the merchant's
+  data layer via `lookup_decline_code`, not from the knowledge base).
+- "Minha máquina não conecta" → **support** (terminal status).
+- "Qual a diferença entre Get Clássica e Get Smart?" → **knowledge** (product catalog).
+- "Como funciona antecipação?" → **knowledge** (product mechanics).
+- "Quando cai o dinheiro de ontem?" → **support** (settlement schedule).
+- "Previsão do tempo em POA" → **knowledge** (general public, web_search).
