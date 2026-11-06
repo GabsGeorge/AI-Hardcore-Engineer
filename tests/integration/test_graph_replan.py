@@ -47,9 +47,10 @@ def _result(confidence: float, error: str | None = None) -> dict[str, Any]:
 
 
 async def test_low_confidence_triggers_a_second_plan(fake_llm: FakeLLM) -> None:
-    # 0.55 is below CONFIDENCE_REPLAN (0.70) → the Supervisor re-plans with Support this time.
+    # 0.35 fica abaixo de CONFIDENCE_REPLAN (0.50) e acima de ESCALATE_HARD (0.25)
+    # → o Supervisor refaz o plano, agora apontando para Support.
     fake_llm.script(supervisor=[make_plan("support")])
-    cmd = await supervisor(_state(results=[_result(0.55)]), CONFIG)
+    cmd = await supervisor(_state(results=[_result(0.35)]), CONFIG)
     assert isinstance(cmd, Command)
     assert cmd.update["attempts"] == 1
     assert cmd.update["plan"]["route"] == ["support"]
@@ -62,10 +63,20 @@ async def test_good_confidence_does_not_replan(fake_llm: FakeLLM) -> None:
     assert fake_llm.calls == []  # the planner was not called again
 
 
-async def test_second_weak_round_escalates(fake_llm: FakeLLM) -> None:
-    cmd = await supervisor(_state(results=[_result(0.5)], attempts=1), CONFIG)
+async def test_second_weak_round_with_support_escalates(fake_llm: FakeLLM) -> None:
+    # Quando algum resultado NÃO é knowledge (ex.: support envolvido), o segundo
+    # round fraco precisa escalar para humano — a policy nova só degrada quando
+    # TUDO é knowledge-only (clima/câmbio não viram chamado).
+    support_result = {**_result(0.35), "agent": "support"}
+    cmd = await supervisor(_state(results=[support_result], attempts=1), CONFIG)
     assert cmd.goto == "escalation"
     assert cmd.update["escalation"]["reason"] == "low_confidence"
+
+
+async def test_second_weak_round_knowledge_only_degrades(fake_llm: FakeLLM) -> None:
+    # Confirma o contrato novo: knowledge-only + attempts>=1 degrada em vez de escalar.
+    cmd = await supervisor(_state(results=[_result(0.35)], attempts=1), CONFIG)
+    assert cmd.goto == "degraded_response"
 
 
 async def test_error_without_results_degrades(fake_llm: FakeLLM) -> None:
