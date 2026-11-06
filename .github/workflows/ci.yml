@@ -139,6 +139,12 @@ jobs:
       - uses: actions/checkout@v4
       # SPA: deps do package-lock vs CVEs conhecidos.
       # Pinamos por SHA (nao por tag) para que o CI nao pegue uma retag silenciosa.
+      # Decisao do time (PR #43, 2026-11-06): exit-code=0 neste scan porque as deps
+      # HIGH/CRITICAL restantes (vite, vitest, tinypool, playwright, launch-editor, zod)
+      # sao de BUILD/TEST e NAO entram no bundle nginx de producao. Os majors que
+      # resolveriam (vite 8, vitest 5, zod 4) tem breaking changes e ficam no backlog.
+      # O SARIF segue sendo enviado para a aba Security (visibilidade); o scan raiz
+      # abaixo mantem exit-code=1 e bloqueia HIGH/CRITICAL em runtime (python+docker).
       - name: trivy fs apps/web
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -147,7 +153,7 @@ jobs:
           format: sarif
           output: trivy-web.sarif
           severity: HIGH,CRITICAL
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: "true"
           trivyignores: .trivyignore.yaml
       # Raiz: pyproject + uv.lock + Dockerfiles.

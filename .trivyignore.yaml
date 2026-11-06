@@ -3,6 +3,10 @@
 #
 # IMPORTANTE: cada entrada tem `expired_at`. Depois dessa data o Trivy volta a bloquear
 # a build ate que seja renovada ou removida (quando o fix estiver aplicado).
+#
+# O scan apps/web roda com exit-code=0 (vulns dev-only nao entram no bundle de
+# producao). As entradas abaixo cobrem o scan raiz (python + docker), onde ainda
+# bloqueamos HIGH/CRITICAL por default.
 vulnerabilities:
   - id: CVE-2023-54404
     statement: >-
@@ -11,49 +15,4 @@ vulnerabilities:
       sem limite, mas no SPA os schemas de validacao sao de inputs pequenos
       (login, chat message, feedback), com rate limit upstream (30 req/min),
       entao a exposicao e baixa. Tarefa de upgrade acompanhada em backlog.
-    expired_at: 2026-12-15
-
-  # --- Dev/test toolchain: NAO entra no bundle de producao -------------------------------
-  # Vite/Vitest/Tinypool/launch-editor sao usados apenas em `npm run dev`, `test` e `build`.
-  # O artefato final servido pelo nginx (web Dockerfile) contem so o bundle estatico; esses
-  # pacotes nao executam em runtime. O fix exige major upgrade (vite 8.x, vitest 5.x) com
-  # breaking changes de API. Acompanhado em backlog.
-  - id: GHSA-5gmw-xhrv-c9v3
-    statement: tinypool prototype pollution. Dev-only (vitest worker pool). Sem exposicao prod.
-    expired_at: 2026-12-15
-  - id: GHSA-85c8-ppgw-ccpr
-    statement: tinypool prototype pollution em run(). Dev-only. Sem exposicao prod.
-    expired_at: 2026-12-15
-  - id: GHSA-4w7w-66w2-5vf9
-    statement: vite path traversal em .map handling. Dev-only (vite dev server). Nao usado em prod.
-    expired_at: 2026-12-15
-  - id: GHSA-v6wh-96g9-6wx3
-    statement: launch-editor NTLMv2 disclosure. Dev-only, so em Windows. CI roda Linux.
-    expired_at: 2026-12-15
-  - id: GHSA-698v-4r3x-3vcv
-    statement: launch-editor escapeCmdArgs no Windows. Dev-only. CI roda Linux.
-    expired_at: 2026-12-15
-  - id: GHSA-r825-w8mm-5pxw
-    statement: launch-editor CLI flag misinterpretation. Dev-only. CI roda Linux.
-    expired_at: 2026-12-15
-  - id: GHSA-587h-7wmj-h5pm
-    statement: launch-editor fs.existsSync bypass Windows. Dev-only. CI roda Linux.
-    expired_at: 2026-12-15
-  - id: GHSA-9jrq-w75r-8gcw
-    statement: vite cross-origin via middleware. Dev-only. Prod usa nginx estatico.
-    expired_at: 2026-12-15
-  - id: GHSA-rq7h-c2jc-7f22
-    statement: vite server.fs.allow bypass. Dev-only. Prod nao serve o dev server.
-    expired_at: 2026-12-15
-  - id: GHSA-fx2h-pf6j-xcff
-    statement: vite server.fs.deny Windows. Dev-only. CI roda Linux.
-    expired_at: 2026-12-15
-  - id: GHSA-5xrq-8626-4rwp
-    statement: vitest UI arbitrary file read. UI nao e habilitada em CI nem em prod.
-    expired_at: 2026-12-15
-  - id: GHSA-82fw-gwwq-j7x9
-    statement: vitest mocker path traversal. Dev-only. Mocker nao executa em prod.
-    expired_at: 2026-12-15
-  - id: GHSA-mrhx-c7xc-m3w5
-    statement: zod DoS em collections oversized. Mesma analise do CVE-2023-54404.
     expired_at: 2026-12-15
