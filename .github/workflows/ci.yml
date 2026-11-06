@@ -92,6 +92,11 @@ jobs:
   web-e2e:
     name: web-e2e (playwright + mailpit, rede isolada)
     runs-on: ubuntu-latest
+    env:
+      # pgvector exige senha superuser para inicializar o volume vazio do CI; o compose
+      # não traz default (prod recebe via .env). Sem isso, postgres sai com exit 1 e
+      # derruba web → web-e2e. Valor efêmero, só vale dentro deste job.
+      POSTGRES_PASSWORD: ci_test_password
     steps:
       - uses: actions/checkout@v4
       - name: playwright e2e

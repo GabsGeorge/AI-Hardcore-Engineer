@@ -74,11 +74,15 @@ async def test_budget_blown_by_planning_stops_before_specialists(fake_llm: FakeL
 
 
 def test_decision_policy_thresholds() -> None:
+    # Policy afrouxada (ver config.py): replan=0.50, escalate_hard=0.25, e resultados
+    # exclusivamente de `knowledge` degradam em vez de escalar (clima/câmbio não devem
+    # virar chamado humano). Os valores de borda abaixo refletem esses limites.
     s = get_settings()
     assert decide([_result(0.75)], attempts=0, settings=s) == "synthesize"
-    assert decide([_result(0.55)], attempts=0, settings=s) == "replan"
-    assert decide([_result(0.55)], attempts=1, settings=s) == "escalate"
-    assert decide([_result(0.35)], attempts=0, settings=s) == "escalate"
+    assert decide([_result(0.55)], attempts=0, settings=s) == "synthesize"
+    assert decide([_result(0.35)], attempts=0, settings=s) == "replan"
+    assert decide([_result(0.35)], attempts=1, settings=s) == "degrade"
+    assert decide([_result(0.20)], attempts=0, settings=s) == "degrade"
     assert decide([_result(0.0, "timeout")], attempts=0, settings=s) == "replan"
-    assert decide([_result(0.9), _result(0.0, "timeout")], attempts=1, settings=s) == "escalate"
+    assert decide([_result(0.9), _result(0.0, "timeout")], attempts=1, settings=s) == "degrade"
     assert decide([], attempts=0, settings=s) == "degrade"
