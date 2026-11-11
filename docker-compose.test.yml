@@ -91,7 +91,10 @@ services:
     environment:
       PLAYWRIGHT_BASE_URL: http://web
       MAILPIT_URL: http://mailpit:8025
-    networks: [testnet]
+    # testnet é internal (sem internet), então o `npm ci` runtime não consegue baixar
+    # o playwright binário. `default` dá saída pública; mantemos `testnet` para alcançar
+    # web/api/mailpit via DNS do compose. Ordem importa: o serviço pode usar as duas.
+    networks: [testnet, default]
     depends_on:
       web: { condition: service_healthy }
       mailpit: { condition: service_healthy }
