@@ -97,6 +97,12 @@ jobs:
       # não traz default (prod recebe via .env). Sem isso, postgres sai com exit 1 e
       # derruba web → web-e2e. Valor efêmero, só vale dentro deste job.
       POSTGRES_PASSWORD: ci_test_password
+      # ingest/api carregam Settings no boot; jwt_secret é obrigatório (>= 32 bytes) e
+      # sem ele o ingest sai com exit 1 antes de rodar migrations, derrubando a stack.
+      # Dummy fixo para o job — nenhum token real é emitido aqui.
+      JWT_SECRET: ci_jwt_secret_with_thirty_two_plus_bytes_long
+      SESSION_SECRET: ci_session_secret_thirty_two_plus_bytes_long
+      PASSWORD_PEPPER: ci_password_pepper_thirty_two_plus_bytes
     steps:
       - uses: actions/checkout@v4
       - name: playwright e2e
@@ -157,6 +163,20 @@ jobs:
           ignore-unfixed: "true"
           trivyignores: .trivyignore.yaml
       # Raiz: pyproject + uv.lock + Dockerfiles.
+      # Dois steps: o primeiro imprime a tabela de CVEs no log (visibilidade);
+      # o segundo gera o SARIF e falha o job. Sem o step de tabela, o SARIF-only
+      # saia com exit 1 sem imprimir qual CVE disparou o bloqueio.
+      - name: trivy fs raiz — tabela (diagnóstico)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          skip-dirs: apps/web,node_modules
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          ignore-unfixed: "true"
+          trivyignores: .trivyignore.yaml
       - name: trivy fs raiz (python + docker)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -169,8 +189,17 @@ jobs:
           exit-code: "1"
           ignore-unfixed: "true"
           trivyignores: .trivyignore.yaml
-      - name: upload sarif
+      # Upload separado por scan, com category distinta: o CodeQL Action v3 nao aceita
+      # mais varios SARIF runs sob a mesma category num unico upload (mudanca 2025-07-21).
+      - name: upload sarif (web)
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: .
+          sarif_file: trivy-web.sarif
+          category: trivy-web
+      - name: upload sarif (root)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-root.sarif
+          category: trivy-root

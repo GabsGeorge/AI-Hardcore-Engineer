@@ -25,7 +25,9 @@ async def test_answer_cites_the_knowledge_base(db_pool: Pool, fake_llm: FakeLLM)
     fake_llm.script(
         knowledge_rewrite=[rewrite(("get smart get clássica", "pt"))],
         knowledge=[
-            answer("A Get Smart tem tela touch; a Get Clássica tem teclado [1][2].", 0.85, (1, 2))
+            # O retriever hoje dedupa por URL (uma passagem por página no top-K), então os
+            # chunks de "Maquininhas Getnet" caem na mesma entrada [1]. O modelo cita só [1].
+            answer("A Get Smart tem tela touch; a Get Clássica tem teclado [1].", 0.85, (1,))
         ],
     )
     out = await run_knowledge("Qual a diferença entre a Get Smart e a Get Clássica?")
