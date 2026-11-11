@@ -15,6 +15,8 @@ test.describe("US6 — Admin sem sessão fica fora de /admin/*", () => {
     await page.getByLabel(/nome|name/i).fill("Convidado");
     await page.getByLabel(/nova senha|new password/i).fill("senha-forte-123456");
     await page.getByRole("button", { name: /ativar|activate/i }).click();
-    await expect(page.getByRole("alert")).toBeVisible();
+    // O design system renderiza um alert `sr-only` permanente para anúncios A11y;
+    // filtramos o alert visível com texto (o banner de erro real).
+    await expect(page.getByRole("alert").filter({ hasText: /./ })).toBeVisible();
   });
 });
