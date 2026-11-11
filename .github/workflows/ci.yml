@@ -111,6 +111,8 @@ jobs:
           SESSION_SECRET=ci_session_secret_thirty_two_plus_bytes_long
           PASSWORD_PEPPER=ci_password_pepper_thirty_two_plus_bytes
           OPENAI_API_KEY=
+          SMTP_URL=smtp://mailpit:1025
+          WEB_BASE_URL=http://web
           EOF
       - name: playwright e2e
         run: |
