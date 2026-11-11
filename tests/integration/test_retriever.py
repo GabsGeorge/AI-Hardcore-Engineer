@@ -40,8 +40,17 @@ async def test_below_threshold_returns_nothing(db_pool: Pool, fake_llm: FakeLLM)
 
 
 async def test_top_5_after_rerank(db_pool: Pool, fake_llm: FakeLLM) -> None:
-    sections = [(f"Pix > Parte {i}", f"pix na maquininha parte {i}") for i in range(8)]
-    await add_document(db_pool, "https://site.getnet.com.br/pix/", "Pix", "pt", sections)
+    # O retriever dedupa por URL (uma passagem por página no top-K), então 8 chunks
+    # do mesmo documento virariam 1 hit. Aqui criamos 8 documentos (URLs distintos)
+    # para validar o corte real do TOP_K = 5 após o rerank.
+    for i in range(8):
+        await add_document(
+            db_pool,
+            f"https://site.getnet.com.br/pix/parte-{i}/",
+            f"Pix Parte {i}",
+            "pt",
+            [(f"Pix > Parte {i}", f"pix na maquininha parte {i}")],
+        )
     hits = await retriever.search("pix maquininha")
     assert len(hits) == 5
 
