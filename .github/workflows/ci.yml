@@ -97,14 +97,21 @@ jobs:
       # não traz default (prod recebe via .env). Sem isso, postgres sai com exit 1 e
       # derruba web → web-e2e. Valor efêmero, só vale dentro deste job.
       POSTGRES_PASSWORD: ci_test_password
-      # ingest/api carregam Settings no boot; jwt_secret é obrigatório (>= 32 bytes) e
-      # sem ele o ingest sai com exit 1 antes de rodar migrations, derrubando a stack.
-      # Dummy fixo para o job — nenhum token real é emitido aqui.
-      JWT_SECRET: ci_jwt_secret_with_thirty_two_plus_bytes_long
-      SESSION_SECRET: ci_session_secret_thirty_two_plus_bytes_long
-      PASSWORD_PEPPER: ci_password_pepper_thirty_two_plus_bytes
     steps:
       - uses: actions/checkout@v4
+      # ingest/api carregam Settings no boot; jwt_secret é obrigatório (>= 32 bytes).
+      # As envs do job só chegam ao shell que invoca o compose; o compose só propaga
+      # para os containers o que estiver em .env ou expandido no YAML. Materializamos
+      # um .env efêmero com dummies longos (>= 32 bytes) só para o container subir.
+      - name: materializar .env dummy para o compose
+        run: |
+          cat > .env <<'EOF'
+          POSTGRES_PASSWORD=ci_test_password
+          JWT_SECRET=ci_jwt_secret_with_thirty_two_plus_bytes_long
+          SESSION_SECRET=ci_session_secret_thirty_two_plus_bytes_long
+          PASSWORD_PEPPER=ci_password_pepper_thirty_two_plus_bytes
+          OPENAI_API_KEY=
+          EOF
       - name: playwright e2e
         run: |
           docker compose -f docker-compose.yml -f docker-compose.test.yml \
