@@ -80,8 +80,7 @@ export function ChatPage() {
   }, [params.id, location.key]);
 
   const handoffLocked = handoff.status === "awaiting_human";
-  const canSubmit =
-    input.trim().length > 0 && !pending && retryAt === undefined && !handoffLocked;
+  const canSubmit = input.trim().length > 0 && !pending && retryAt === undefined && !handoffLocked;
 
   const send = useCallback(
     async (text: string) => {
@@ -189,7 +188,7 @@ export function ChatPage() {
           }
           disabled={pending || retryAt !== undefined || handoffLocked}
           aria-busy={pending || undefined}
-          className={handoffLocked ? "bg-surface-200 text-ink-400 cursor-not-allowed" : undefined}
+          className={handoffLocked ? "cursor-not-allowed bg-surface-200 text-ink-400" : undefined}
         />
         <Button type="submit" loading={pending} disabled={!canSubmit}>
           {t("chat.send")}

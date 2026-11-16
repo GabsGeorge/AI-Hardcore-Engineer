@@ -69,7 +69,7 @@ POST /v1/chat → [auth] → [identidade só no config, nunca no state (ADR 0005
              → input_guardrail (PII + heurísticas + classificador)
              → summarize (dobra mensagens antigas em `summary` quando passam de 8)
              → supervisor
-                 ├─ Send(knowledge)  → RAG híbrido (BM25 + pgvector + RRF + rerank)
+                 ├─ Send(knowledge)  → RAG denso (pgvector); híbrido + rerank opcional
                  ├─ Send(support)    → tools do lojista (settlement, terminal, decline, tx)
                  └─ escalation       → interrupt() → aguarda operador via /v1/handoffs/{id}/reply
              → synthesize | degraded_response | safe_response
@@ -90,20 +90,26 @@ Diagrama completo em [docs/architecture.drawio](docs/architecture.drawio).
 ### Pipeline RAG
 
 1. Reescrita multi-query PT↔EN (saída estruturada).
-2. Recuperação paralela: **BM25** in-memory via `bm25s` (reconstruído na ingestão) +
-   **densa** via pgvector (HNSW).
-3. **Reciprocal Rank Fusion** (k = 60) para unir os dois rankings.
-4. **Rerank** com FlashRank (cross-encoder) em cima do top-fused.
-5. Nó Knowledge compõe a resposta com citações; grounding verificado no guardrail de saída.
+2. Estratégia **`RAG_STRATEGY=dense`** (padrão): top-20 por cosseno no pgvector, corte em
+   `RAG_DENSE_THRESHOLD` (0,40), melhor passagem de cada página, top-5 páginas distintas.
+3. Estratégia **`RAG_STRATEGY=hybrid_rerank`** (opcional): **BM25** in-memory (`bm25s`) +
+   densa → **RRF** (k = 60) → **rerank** FlashRank. Implementada e testada, mas não é o padrão:
+   perdeu nas medições e o reranker não é estável com 4 GB.
+4. Nó Knowledge compõe a resposta com citações; o grounding do guardrail de saída confere
+   cada afirmação contra o **texto** das passagens e a pergunta (ver "Guardrails").
 
-Métricas medidas no conjunto rotulado (16 queries, 239 chunks) — detalhes em
-[ADR 0003 — Métricas](docs/adr/0003-busca-hibrida.md#métricas-medidas):
+A estratégia padrão foi escolhida pelos dados, no conjunto rotulado de 14 perguntas — detalhes,
+calibração do limiar e limitações em
+[ADR 0003](docs/adr/0003-busca-hibrida.md#métricas-medidas):
 
-| Estratégia       | recall@5 | MRR   | nDCG@5 |
-|------------------|----------|-------|--------|
-| densa            | 0,896    | 0,833 | 0,776  |
-| híbrida (RRF)    | 0,771    | 0,771 | 0,705  |
-| híbrida + rerank | 0,771    | 0,750 | 0,705  |
+| Estratégia    | recall@5 | MRR   | nDCG@5 |
+|---------------|----------|-------|--------|
+| **densa**     | **0,798**| **0,762** | **0,715** |
+| híbrida (RRF) | 0,690    | 0,690 | 0,630  |
+
+O gate `recall@5 ≥ 0,90` **não é atingido** no conjunto ampliado (0,896 só nas 8 perguntas
+originais); híbrida + rerank não foi remedida por instabilidade do reranker (0,479 na medição
+anterior). Amostra pequena: veja as ressalvas no ADR.
 
 ### Guardrails
 
@@ -113,7 +119,10 @@ Métricas medidas no conjunto rotulado (16 queries, 239 chunks) — detalhes em
 - **Saída** ([src/app/guardrails/output.py](src/app/guardrails/output.py)):
   re-máscara (PII não escapa pelo checkpoint), reescrita de promessa financeira (bypass para
   respostas vindas do operador humano em handoff), verificação de grounding para respostas
-  do Knowledge com fontes.
+  do Knowledge com fontes. O grounding recebe **a pergunta e o texto das passagens** (sem
+  atalho por confiança alta) e reprova resposta sobre algo que a pergunta citou e as fontes
+  não mencionam; uma negativa de capacidade ("não aceita X") sem fonte que a diga é bloqueada
+  de forma determinística. Validação com o modelo real: [docs/reports/smoke.md](docs/reports/smoke.md).
 - 30+ ataques PT/EN em [tests/security/data/attacks.yaml](tests/security/data/attacks.yaml);
   taxa de bloqueio ≥ 95% exigida pela suíte.
 
@@ -209,8 +218,9 @@ jornada por perfil e tracking em [apps/web/PRODUCT.md](apps/web/PRODUCT.md). [RE
 
 ## Núcleo vs extensões
 
-- **Núcleo** (entregue): 3 agentes (Router/Supervisor, Knowledge, Support), hybrid RAG com
-  RRF e rerank, guardrails, HITL com retomada, auditoria básica.
+- **Núcleo** (entregue): 3 agentes (Router/Supervisor, Knowledge, Support), RAG denso por
+  padrão (BM25 + RRF + rerank implementado e selecionável), guardrails, HITL com retomada,
+  auditoria básica.
 - **Extensões** (em andamento ou planejadas): rate limit + idempotência (US9), fallback de
   modelo (US9), expurgo e LGPD (US9), tracing/métricas/dashboards/eval online (US8),
   streaming SSE, CI com gates, k6.
@@ -341,7 +351,7 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests p
 
 - [ADR 0001 — Supervisor vs Router](docs/adr/0001-supervisor-vs-router.md)
 - [ADR 0002 — Postgres + pgvector](docs/adr/0002-postgres-pgvector.md)
-- [ADR 0003 — Busca híbrida (BM25 + densa + RRF + rerank)](docs/adr/0003-busca-hibrida.md)
+- [ADR 0003 — Estratégia de busca (densa por padrão, híbrida + rerank disponível)](docs/adr/0003-busca-hibrida.md)
 - [ADR 0004 — HITL via interrupt()](docs/adr/0004-hitl-interrupt.md)
 - [ADR 0005 — Identidade via token](docs/adr/0005-identidade-via-token.md)
 - [ADR 0006 — LLM fake em CI](docs/adr/0006-llm-fake-em-ci.md)

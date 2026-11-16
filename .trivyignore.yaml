@@ -3,6 +3,10 @@
 #
 # IMPORTANTE: cada entrada tem `expired_at`. Depois dessa data o Trivy volta a bloquear
 # a build ate que seja renovada ou removida (quando o fix estiver aplicado).
+#
+# O scan apps/web roda com exit-code=0 (vulns dev-only nao entram no bundle de
+# producao). As entradas abaixo cobrem o scan raiz (python + docker), onde ainda
+# bloqueamos HIGH/CRITICAL por default.
 vulnerabilities:
   - id: CVE-2023-54404
     statement: >-

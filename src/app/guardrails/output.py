@@ -19,6 +19,7 @@ from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentState
 from app.guardrails.pii import mask
+from app.observability.logging import get_logger
 from app.observability.metrics import GUARDRAIL_BLOCKS
 
 _SAFE_REWRITE: dict[str, str] = {
@@ -56,6 +57,28 @@ _FINANCIAL_PROMISE = re.compile(
 )
 
 
+# A negative capability claim about the company itself ("A Getnet não aceita X", "Getnet does not
+# offer X"). Silence in the sources does not prove it, and an LLM grounding check lets it through
+# now and then, so this one is enforced deterministically: the passages must contain the same
+# negation. Negations about one specific product ("a Get Clássica não possui X", common in a
+# comparison where the sources attribute X to the other model) are left to the grounding model.
+_NEGATIVE_CLAIM = re.compile(
+    r"\bgetnet\b[^.!?\n]{0,40}?"
+    r"(?P<negation>\bn[ãa]o\s+(?:aceita|oferece|possui|tem|permite|suporta|atende|disponibiliza)\b"
+    r"|\b(?:does\s+not|doesn['’]t)\s+(?:accept|offer|have|support|allow)\b)",
+    re.IGNORECASE,
+)
+
+
+def _has_unsupported_negative(reply: str, results: list[Any]) -> bool:
+    evidence = " ".join(" ".join(r.get("evidence") or []) for r in results).lower()
+    evidence = re.sub(r"\s+", " ", evidence)
+    for claim in _NEGATIVE_CLAIM.finditer(reply):
+        if re.sub(r"\s+", " ", claim.group("negation").lower()) not in evidence:
+            return True
+    return False
+
+
 Flag = Literal["output:pass", "output:rewritten", "output:blocked"]
 
 
@@ -65,26 +88,54 @@ def _language(state: AgentState) -> str:
 
 
 def _sources_block(results: list[Any]) -> str:
-    lines = []
+    """Passages the answer model actually saw (``evidence``), numbered like its context. The
+    grounding model needs the real text to judge each claim; title + url alone forces it to
+    guess, which blocked correct answers and let unsupported ones through. Falls back to the
+    bare source list only when a result carries no evidence."""
+    lines: list[str] = []
     for r in results:
+        evidence = r.get("evidence") or []
+        if evidence:
+            lines.extend(f"[{len(lines) + 1}] {text}" for text in evidence)
+            continue
         for s in r.get("sources") or []:
-            lines.append(f"- [{s.get('kind', 'kb')}] {s.get('title', '')} — {s.get('url', '')}")
-    return "\n".join(lines)
+            kind, title, url = s.get("kind", "kb"), s.get("title", ""), s.get("url", "")
+            lines.append(f"[{len(lines) + 1}] ({kind}) {title} — {url}")
+    return "\n\n".join(lines)
 
 
-async def _check_grounding(final: str, results: list[Any]) -> bool | None:
-    """``True``/``False`` from the model, ``None`` on error → fail-open (keep the reply)."""
+def _last_question(messages: list[Any]) -> str:
+    """The merchant's latest message (already PII-masked by the input guardrail)."""
+    human = next((m for m in reversed(messages) if isinstance(m, HumanMessage)), None)
+    return human.content if human is not None and isinstance(human.content, str) else ""
+
+
+async def _check_grounding(final: str, results: list[Any], question: str = "") -> bool | None:
+    """``True``/``False`` from the model, ``None`` on error → fail-open (keep the reply).
+
+    The question is part of the input: without it the checker can only confirm that each
+    sentence appears in the sources, not that the reply is about what was asked (a named product
+    or figure the sources never mention)."""
     try:
         model = get_model("output_guard").with_structured_output(GroundingResult)
         result = await model.ainvoke(
             [
                 SystemMessage(content=load_prompt("grounding")),
-                HumanMessage(content=f"Response:\n{final}\n\nSources:\n{_sources_block(results)}"),
+                HumanMessage(
+                    content=(
+                        f"Question:\n{question}\n\nResponse:\n{final}\n\n"
+                        f"Sources:\n{_sources_block(results)}"
+                    )
+                ),
             ]
         )
     except Exception:
         return None
-    return result.grounded if isinstance(result, GroundingResult) else None
+    if not isinstance(result, GroundingResult):
+        return None
+    if not result.grounded:
+        get_logger().info("output_grounding_verdict", trigger="model", reason=result.reason)
+    return result.grounded
 
 
 async def output_guardrail(state: AgentState) -> dict[str, Any]:
@@ -108,22 +159,23 @@ async def output_guardrail(state: AgentState) -> dict[str, Any]:
         masked_final = _SAFE_REWRITE.get(language, _SAFE_REWRITE["pt"])
         rewritten = True
 
-    # Barrier 3: grounding check only when the reply came from Knowledge WITH sources.
-    # Pulamos a checagem quando o Knowledge veio com citacoes [N] e confidence >= 0.70:
-    # o agente ja validou as fontes, e a checagem LLM so com title+url (sem conteudo)
-    # vinha dando falso-positivo e bloqueando respostas corretas (QA 2026-11-05).
+    # Barrier 3: grounding check sempre que a resposta vier do Knowledge COM fontes.
+    # A checagem agora recebe o CONTEÚDO das passagens (não só título+URL), condição para
+    # o modelo de guarda julgar se cada afirmação da resposta está de fato apoiada.
     knowledge_with_sources = [
         r
         for r in results
         if r.get("agent") == "knowledge" and not r.get("error") and r.get("sources")
     ]
-    confident_with_citations = any(
-        r.get("confidence", 0.0) >= 0.70 and re.search(r"\[\d+\]", r.get("answer", ""))
-        for r in knowledge_with_sources
-    )
     blocked = False
-    if knowledge_with_sources and not rewritten and not confident_with_citations:
-        grounded = await _check_grounding(masked_final, knowledge_with_sources)
+    if knowledge_with_sources and not rewritten:
+        if _has_unsupported_negative(masked_final, knowledge_with_sources):
+            get_logger().info("output_grounding_verdict", trigger="negative_claim")
+            grounded: bool | None = False
+        else:
+            grounded = await _check_grounding(
+                masked_final, knowledge_with_sources, _last_question(messages)
+            )
         if grounded is False:
             masked_final = _UNGROUNDED.get(language, _UNGROUNDED["pt"])
             blocked = True

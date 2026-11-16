@@ -56,13 +56,27 @@ def _valid_card(text: str) -> bool:
 
 
 # Phone runs before card so "+55 51 99876-5432" is never read as a 13-digit card number.
-# CPF e CNPJ aceitam match estrutural (11/14 digitos no formato correto) sem Luhn: um
-# lojista que digita um CPF ficticio (111.111.111-11, 000.000.000-00) tambem deve ter o
-# dado mascarado. Antes o Luhn falhava e a mensagem ia crua para o LLM (achado 3 eval.md).
-# Cartao mantem Luhn: codigos numericos de 13-19 digitos seriam falsos positivos demais.
+def _masks_cpf(text: str) -> bool:
+    """Valid check digits, or one of the canonical fictitious CPFs people type as a placeholder:
+    all digits equal (111.111.111-11) or the 123456789 sequence (123.456.789-00)."""
+    d = _digits(text)
+    return _valid_cpf(text) or (
+        len(d) == 11 and (len(set(d)) == 1 or d[:9] == [1, 2, 3, 4, 5, 6, 7, 8, 9])
+    )
+
+
+def _masks_cnpj(text: str) -> bool:
+    d = _digits(text)
+    return _valid_cnpj(text) or (len(d) == 14 and len(set(d)) == 1)
+
+
+# CPF/CNPJ fictícios com dígitos repetidos (111.111.111-11, 000.000.000-00) também são
+# mascarados: um lojista que os digita não deve ver o dado cru chegar ao LLM (achado 3 do
+# eval.md). Demais números que falham o dígito verificador seguem intactos, para não
+# mascarar IDs e códigos. Cartão mantém Luhn.
 _RULES: list[tuple[str, str, re.Pattern[str], Callable[[str], bool]]] = [
-    ("cnpj", "[CNPJ]", _CNPJ, lambda _: True),
-    ("cpf", "[CPF]", _CPF, lambda _: True),
+    ("cnpj", "[CNPJ]", _CNPJ, _masks_cnpj),
+    ("cpf", "[CPF]", _CPF, _masks_cpf),
     ("email", "[EMAIL]", _EMAIL, lambda _: True),
     ("phone", "[TELEFONE]", _PHONE, lambda _: True),
     ("card", "[CARTAO]", _CARD, _valid_card),

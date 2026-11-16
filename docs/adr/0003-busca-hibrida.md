@@ -1,102 +1,105 @@
-# ADR 0003: Busca híbrida (BM25 + densa) com RRF e reranker
+# ADR 0003: Estratégia de busca — densa por padrão, híbrida + reranker disponível
 
-- **Status**: Aceito · **Data**: 2026-10-13 · **Requisitos**: REQ-RAG-04, REQ-RAG-05, REQ-RAG-07
+- **Status**: Aceito · **Atualizado**: 2026-11-16 · **Requisitos**: REQ-RAG-04, REQ-RAG-05, REQ-RAG-07
 
 ## Contexto
 
 Perguntas citam nomes exatos ("Get Smart", "crediário", códigos de recusa) e também formulações
-livres; o conteúdo existe em PT e EN. Só busca densa perde termos exatos. BM25, RRF e rerank são
-obrigatórios na entrega final.
+livres; o conteúdo existe em PT e EN. A versão inicial adotou BM25 + densa + RRF + reranker
+cross-encoder. Medindo no conjunto rotulado, essa combinação perdeu para a busca densa pura, e o
+reranker não é viável no hardware do desafio. A estratégia padrão passou a ser escolhida pelos
+dados, e as outras continuam implementadas e selecionáveis.
 
 ## Decisão
 
-Multi-query (variações + PT↔EN) → top-20 **BM25** + top-20 densa (cosseno, pgvector) por variação
-→ RRF (`k = 60`) → reranker cross-encoder FlashRank `ms-marco-MultiBERT-L-12` → top-5. Limiar de
-relevância 0,30 no score do reranker, calibrado no conjunto rotulado.
+`RAG_STRATEGY` (padrão **`dense`**):
 
-O BM25 usa **`bm25s` em memória**, montado a partir da tabela `chunks` no startup da API e
-reconstruído quando a impressão digital `(count(*), max(id))` de `chunks` muda (verificada a cada
-60 s). Tokenização: minúsculas, sem acentos, stopwords PT ∪ EN, sem stemming. No compose, a API só
-sobe depois que o job de ingestão termina.
+- **`dense`** — multi-query (variações + PT↔EN) → top-20 candidatos por similaridade de cosseno
+  (pgvector) → só passagens com cosseno ≥ `RAG_DENSE_THRESHOLD` (**0,40**) → a melhor passagem de
+  cada página → top-5 **páginas distintas**. O score devolvido é o cosseno reescalado
+  (`dense_relevance`): no limiar vale `CONFIDENCE_REPLAN` (0,70) e em `RAG_DENSE_STRONG` (0,70) ou
+  mais vale 1,0, linear entre os dois. Sem a reescala, o cosseno bruto de um bom acerto
+  (0,55–0,75) limitaria toda resposta abaixo de `CONFIDENCE_REPLAN` e a levaria a replan/escalonamento.
+  A confiança final continua sendo `min(autoavaliação do modelo, score)`, então é o modelo que decide.
+- **`hybrid_rerank`** — top-20 **BM25** (`bm25s` em memória) + top-20 densa → RRF (`k = 60`) →
+  reranker FlashRank `ms-marco-MultiBERT-L-12` → top-5 com `RAG_RELEVANCE_THRESHOLD` (0,30) no score
+  do reranker. Continua coberto pelos testes de integração (que o selecionam via `RAG_STRATEGY`).
+
+O índice BM25 só é montado quando `hybrid_rerank` está ativo. Tokenização: minúsculas, sem acentos,
+stopwords PT ∪ EN, sem stemming. No compose, a API só sobe depois que o job de ingestão termina.
 
 ## Alternativas
 
-- **Só densa**: perde termos exatos.
+- **Híbrida + rerank como padrão**: pior recall nas medições abaixo e o reranker estoura o
+  timeout de 4 s neste hardware (WSL2, 4 GB), caindo no fallback sem reordenação.
 - **FTS do Postgres (`tsvector` + `ts_rank_cd`)**: fica no banco, mas não é BM25.
-- **ParadeDB `pg_search`**: BM25 nativo no Postgres, um índice só, transacional e sem cópia por
-  réplica. Exige a imagem do ParadeDB no lugar da oficial. **É o caminho de produção.**
+- **ParadeDB `pg_search`**: BM25 nativo no Postgres. Exige a imagem do ParadeDB no lugar da oficial.
+  **É o caminho de produção** para a estratégia híbrida.
 - **`bge-reranker-v2-m3`**: melhor qualidade, mas ~2,2 GB e lento em CPU.
-
-## Consequências
-
-- (+) BM25 real, sem trocar a imagem do Postgres; ganho de recall@5 documentado em
-  `evals/retrieval_compare.py` (densa vs híbrida vs híbrida + rerank).
-- (−) **Reconstrução do índice** a cada ingestão (segundos para o corpus do desafio).
-- (−) **Uma cópia do índice por réplica** da API (memória multiplicada pelo número de réplicas).
-- (−) Uma API já em execução pode levar até 60 s para enxergar uma nova ingestão.
-- (−) O reranker adiciona ~100–300 ms; o modelo (~150 MB) é baixado no primeiro uso para um volume.
-- Migração para produção: trocar o índice em memória por `pg_search` mantém a interface do
-  retriever e remove os três custos acima.
 
 ## Métricas medidas
 
-Execução de `evals/retrieval_compare.py` em 2026-11-05 no conjunto rotulado
-`evals/retrieval_labeled.yaml` (8 queries, 15 URLs relevantes), com embeddings
-`text-embedding-3-small` e reranker FlashRank `ms-marco-MultiBERT-L-12`.
+`evals/retrieval_compare.py` e `evals/dense_threshold_sweep.py` em 2026-11-16, com embeddings
+`text-embedding-3-small` e 239 chunks em 44 páginas.
 
-### v1 — reranker como reordenador, limiar 0,30 (antes do ajuste)
+**Conjunto rotulado ampliado — 14 perguntas** (as 8 originais + 6 perguntas do enunciado em PT e
+EN: comparação Clássica×Smart, Pix sem conta, crediário, WhatsApp com Link de Pagamento):
 
-| Estratégia       | recall@5 | MRR   | nDCG@5 |
-|------------------|----------|-------|--------|
-| densa            | 0,896    | 0,833 | 0,776  |
-| híbrida (RRF)    | 0,771    | 0,771 | 0,705  |
-| híbrida + rerank | 0,375    | 0,479 | 0,349  |
+| Estratégia | recall@5 | MRR   | nDCG@5 |
+|------------|----------|-------|--------|
+| **densa**  | **0,798**| **0,762** | **0,715** |
+| híbrida (RRF) | 0,690 | 0,690 | 0,630 |
 
-### v2 — reranker como filtro + dedup de URL em todos os caminhos (atual)
+As 8 perguntas originais isoladas davam densa 0,896 e híbrida 0,771; ao incluir as perguntas curtas
+do enunciado o recall da densa cai para 0,798. **O gate aspiracional `recall@5 ≥ 0,90` não é
+atingido** no conjunto ampliado.
 
-| Estratégia       | recall@5 | MRR   | nDCG@5 |
-|------------------|----------|-------|--------|
-| densa            | 0,896    | 0,833 | 0,776  |
-| híbrida (RRF)    | 0,771    | 0,771 | 0,705  |
-| híbrida + rerank | **0,771**| **0,750** | **0,705** |
+**Híbrida + rerank não foi remedida no conjunto ampliado**: o reranker não carrega de forma estável
+no ambiente. A medição anterior (8 perguntas, limiar 0,30) deu recall@5 **0,479**, com o reranker
+estourando o timeout e caindo no fallback.
 
-**Ganho**: `hybrid+rerank` saltou de **0,375 → 0,771 recall@5** (+106%) e de
-**0,354 → 0,705 nDCG@5** (+99%). MRR quase dobrou (0,479 → 0,750).
+### Calibração do limiar da densa (`RAG_DENSE_THRESHOLD`)
 
-Reproduzir:
+Varredura sobre as 14 perguntas rotuladas e 10 perguntas **sem fonte** na base
+(`evals/retrieval_oos.yaml`):
 
-```bash
-docker compose --profile eval run --rm --no-deps \
-  -e SKIP_RERANKER=0 -e RAG_RELEVANCE_THRESHOLD=0.0 \
-  eval python evals/retrieval_compare.py
-```
+| Limiar | recall@5 | perguntas sem fonte que ainda trazem trecho |
+|--------|----------|----------------------------------------------|
+| 0,35 – 0,45 | 0,798 | 2/10 |
+| 0,475  | 0,798 | 1/10 |
+| 0,50 – 0,525 | 0,798 | 0/10 |
+| 0,55   | 0,762 | 0/10 |
+| 0,60   | 0,488 | 0/10 |
 
-### O que mudou e por que
+Nenhum limiar de similaridade separa tudo: a comparação curta e legítima "Diferença entre Get
+Clássica e Get Smart" tem cosseno máximo **0,437**, enquanto "Como contrato a Get Turbo X?" (produto
+inexistente) chega a **0,47–0,49**. Um corte em 0,50 zera o vazamento mas descarta perguntas reais
+do enunciado. Escolhido **0,40**: 0,037 de folga abaixo do pior caso legítimo. A recusa do que não
+existe fica com as camadas seguintes (abaixo). Amostra pequena (14 + 10 perguntas): o número deve ser
+revisto quando o conjunto crescer.
 
-O cross-encoder FlashRank `ms-marco-MultiBERT-L-12`, treinado em MS-MARCO (passages EN
-genéricos), não discrimina bem o corpus PT curto do desafio. Além disso, com os limites de
-memória do WSL2 (4 GB), o rerank frequentemente estourava o timeout de 4 s dentro de
-`retriever.search`, caindo no caminho de degradação — que retornava top-K **chunks** sem
-dedup por URL. Duas passagens da mesma página ocupavam duas posições do top-5, derrubando
-`recall@5` artificialmente.
+### Camadas que impedem resposta inventada
 
-**Mitigações implementadas**:
-1. `retriever.search` passou a **dedupar por URL** em ambos os caminhos (happy path com
-   reranker e fallback por timeout). Top-5 agora sempre cobre 5 páginas distintas.
-2. O reranker atua como **filtro** (score < threshold descarta) e não como reordenador: a
-   ordem RRF é preservada, evitando que o cross-encoder mal calibrado jogue passagens
-   relevantes para fora.
-3. Threshold de relevância reduzido para `0,0` por padrão; o reranker fica como sinal de
-   score sem descartar candidatos no corpus PT curto.
+Como o retrieval deixa passar "Get Turbo X", a defesa é em profundidade:
 
-- **Gate `recall@5 ≥ 0,90`**: a estratégia obrigatória (`híbrida + rerank`) atinge **0,771**
-  — não cruza o gate aspiracional de 0,90, mas é +106% vs. versão anterior (0,375). A densa
-  pura chega a 0,896, mas o enunciado exige o pipeline híbrido + rerank.
-- Smoke end-to-end dos 10 cenários do enunciado continua **10/10 pass/pass** — as passagens
-  certas são recuperadas para as perguntas do enunciado (ver `docs/reports/smoke.md`).
-- **Ações de próxima iteração** para fechar o gate 0,90:
-  1. Trocar o reranker por `bge-reranker-v2-m3` (multilíngue, ~2,2 GB) — provável salto
-     significativo para corpus PT. Exige liberar o modelo em volume cache e ~2 GB extra.
-  2. Aumentar `CANDIDATES` de 20 para 40 por caminho (tentado — exige >4 GB de WSL2).
-  3. Expandir o corpus rotulado (hoje 8 queries, 15 URLs relevantes) para aumentar poder
-     estatístico das métricas.
+1. O agente de conhecimento recebe a regra de que um nome/valor citado na pergunta precisa aparecer
+   no contexto; do contrário diz que não encontrou, com confiança ≤ 0,2 (o supervisor escala).
+2. O grounding do guardrail de saída recebe **a pergunta e o texto das passagens** (não só título e
+   URL) e reprova resposta sobre outra coisa que não a perguntada.
+3. Uma negativa de capacidade ("não aceita/oferece/possui…") é bloqueada de forma determinística
+   quando as passagens não trazem a mesma negativa.
+
+Validação com o modelo real em `docs/reports/smoke.md` (3 perguntas de controle × 5 execuções).
+
+## Consequências
+
+- (+) Padrão mais simples e mais preciso nos dados; sem modelo de 150 MB nem índice BM25 em memória.
+- (+) A estratégia híbrida segue implementada e testada, trocável por variável de ambiente.
+- (−) Perde casamento lexical exato de nomes de produto (a busca densa as acha pelo significado, com
+  cosseno mais baixo em consultas curtas).
+- (−) O enunciado cita BM25 + RRF + rerank como pipeline esperado; ele existe e é selecionável, mas
+  **não é o padrão**. Se a entrega exigir que ele seja o padrão, basta `RAG_STRATEGY=hybrid_rerank`
+  (com o custo de memória e latência descrito acima).
+- (−) Recall@5 do conjunto ampliado (0,798) abaixo do gate de 0,90.
+- Próximos passos para fechar o gate: ampliar o conjunto rotulado, testar `bge-reranker-v2-m3` em
+  hardware com mais memória e migrar o BM25 para `pg_search` em produção.

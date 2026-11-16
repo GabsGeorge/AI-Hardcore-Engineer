@@ -19,6 +19,10 @@ export default defineConfig({
     baseURL: BASE_URL,
     headless: true,
     viewport: { width: 1280, height: 720 },
+    // A SPA detecta o idioma a partir de navigator.language; os testes foram escritos
+    // em PT ("criar conta", "entrar", "sair", "ativar"), então o navegador precisa
+    // reportar pt-BR para não cair em EN (CI chromium default é en-US).
+    locale: "pt-BR",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     trace: "retain-on-failure",

@@ -36,19 +36,26 @@ class Settings(BaseSettings):
 
     max_steps: int = Field(6, ge=1)
     token_budget_per_run: int = Field(20_000, ge=1)
-    # Thresholds afrouxados para evitar escalate sistematico. Antes: replan=0.70,
-    # escalate=0.40 — o knowledge LLM frequentemente reportava confidence 0.5-0.6
-    # (hedge) e o supervisor escalava em vez de responder. Agora o lojista recebe
-    # a resposta quando o agente tem material confiavel, mesmo que o modelo tenha
-    # hedgeado.
-    confidence_replan: float = Field(0.50, ge=0, le=1)
-    confidence_escalate_hard: float = Field(0.25, ge=0, le=1)
-    # 0.0: o reranker funciona como re-ordenador, nao como filtro. O cross-encoder em PT
-    # dava scores baixos para passagens relevantes e derrubava recall@5 de 0,77 (so hybrid)
-    # para 0,38 (hybrid+rerank). Com 0.0 mantemos todas as passagens fundidas e usamos o
-    # score do reranker apenas para desempate quando ha sinal. Evidencia em
-    # evals/retrieval_compare.py (recall@5=0.90+, MRR=0.75+).
-    rag_relevance_threshold: float = Field(0.0, ge=0, le=1)
+    # Thresholds originais do contrato. Valores anteriores (0.50/0.25) foram atalhos
+    # para mascarar hedge do modelo; voltamos a 0.70/0.40 e a calibração do retriever
+    # cabe ao score real (não ao supervisor).
+    confidence_replan: float = Field(0.70, ge=0, le=1)
+    confidence_escalate_hard: float = Field(0.40, ge=0, le=1)
+    # Estratégia de retrieval escolhida pelos dados de `evals/retrieval_compare.py` (ADR 0003):
+    # densa venceu híbrida e híbrida+rerank em recall@5, MRR e nDCG@5 neste corpus.
+    rag_strategy: Literal["dense", "hybrid_rerank"] = "dense"
+    # Limiar da estratégia densa (similaridade de cosseno), calibrado em
+    # `evals/dense_threshold_sweep.py` (14 perguntas rotuladas, 10 sem fonte): o recall@5 não
+    # muda até 0,525, mas a comparação curta do enunciado ("Get Clássica e Get Smart") fica em
+    # 0,437 e "Get Turbo X" (inexistente) em 0,47-0,49, então nenhum corte separa os dois.
+    # 0,40 dá folga sobre o pior caso legítimo; a recusa do que não existe fica com a resposta
+    # (confiança) e o grounding sobre o texto das fontes.
+    rag_dense_threshold: float = Field(0.40, ge=0, le=1)
+    # Cosseno a partir do qual um trecho conta como acerto forte (score 1.0). Entre o limiar e
+    # este valor o score sobe linearmente de `confidence_replan` até 1.0 (ver dense_relevance).
+    rag_dense_strong: float = Field(0.70, ge=0, le=1)
+    # Limiar do score do reranker na estratégia `hybrid_rerank` (escala diferente da densa).
+    rag_relevance_threshold: float = Field(0.30, ge=0, le=1)
 
     rate_limit_per_min: int = Field(30, ge=1)
     handoff_sla_minutes: int = Field(15, ge=1)
