@@ -42,6 +42,9 @@ class AgentResult(TypedDict):
     sources: list[Source]
     tools_used: list[ToolCallRecord]
     error: str | None
+    # Texto das passagens que o modelo de resposta viu (chunks KB / snippets web). Uso interno
+    # da checagem de grounding (REQ-GR-04); nunca exposto em `sources`, que é contrato da API.
+    evidence: NotRequired[list[str]]
 
 
 class Escalation(TypedDict):

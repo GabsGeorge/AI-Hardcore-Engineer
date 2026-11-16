@@ -44,3 +44,37 @@ queries:
     relevant:
       - https://www.getnet.net/en/our-solutions/online-payments
       - https://www.getnet.net/en/our-solutions/omnichannel
+  # Perguntas do enunciado (scripts/smoke_report.py): consultas curtas com nome de produto,
+  # que o conjunto inicial não cobria e que o limiar de similaridade tem de acomodar.
+  - id: q-09
+    text: "Diferença entre Get Clássica e Get Smart"
+    relevant:
+      - https://site.getnet.com.br/todas-as-maquininhas/
+      - https://site.getnet.com.br/maquininha-de-cartao/
+  - id: q-10
+    text: "Preciso de conta bancária para receber via Pix?"
+    relevant:
+      - https://site.getnet.com.br/pix/
+      - https://site.getnet.com.br/pix-na-maquininha-getnet/
+  - id: q-11
+    text: "Como funcionam as parcelas no crediário?"
+    relevant:
+      - https://site.getnet.com.br/crediario/
+  - id: q-12
+    text: "Como vender pelo WhatsApp com Link de Pagamento?"
+    relevant:
+      - https://site.getnet.com.br/link-de-pagamento/
+      - https://site.getnet.com.br/link-de-pagamento-vendas/
+      - https://site.getnet.com.br/link-de-pagamento-getnet/
+  - id: q-13
+    lang: en
+    text: "What is the difference between Get Clássica and Get Smart?"
+    relevant:
+      - https://site.getnet.com.br/todas-as-maquininhas/
+      - https://site.getnet.com.br/maquininha-de-cartao/
+  - id: q-14
+    lang: en
+    text: "Do I need a bank account to receive Pix?"
+    relevant:
+      - https://site.getnet.com.br/pix/
+      - https://site.getnet.com.br/pix-na-maquininha-getnet/

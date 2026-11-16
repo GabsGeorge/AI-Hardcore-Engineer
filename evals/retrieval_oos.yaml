@@ -1,0 +1,25 @@
+# Perguntas SEM fonte na base de conhecimento (produto inexistente, assunto fora do domínio).
+# Usadas por evals/dense_threshold_sweep.py para calibrar o limiar: nenhuma delas deveria
+# trazer passagem acima dele. Perguntas sobre clima/câmbio ficam de fora porque seguem a rota
+# de web_search, não a base.
+queries:
+  - id: oos-01
+    text: "Como contrato a Get Turbo X?"
+  - id: oos-02
+    text: "Quanto custa a maquininha Get Ultra Max 9000?"
+  - id: oos-03
+    text: "Quem ganhou o campeonato brasileiro de futebol?"
+  - id: oos-04
+    text: "Me dá uma receita de bolo de chocolate"
+  - id: oos-05
+    text: "Qual a capital da Austrália?"
+  - id: oos-06
+    text: "Quem vai ganhar a próxima eleição presidencial?"
+  - id: oos-07
+    text: "How do I hire the Get Turbo X terminal?"
+  - id: oos-08
+    text: "Who won the football world cup?"
+  - id: oos-09
+    text: "Explique como funciona a computação quântica"
+  - id: oos-10
+    text: "Qual o melhor filme de ficção científica de todos os tempos?"

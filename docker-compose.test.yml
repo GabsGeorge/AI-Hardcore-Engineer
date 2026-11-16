@@ -5,6 +5,9 @@ x-test-env: &test-env
   DATABASE_URL: postgresql://test:test@test-postgres:5432/test
   REDIS_URL: redis://test-redis:6379/0
   APP_ENV: test
+  # Os testes de retrieval validam o pipeline híbrido + reranker (FakeReranker). O padrão
+  # de produção é `dense`, coberto por tests/integration/test_retriever_dense.py.
+  RAG_STRATEGY: hybrid_rerank
 
 services:
   test-postgres:

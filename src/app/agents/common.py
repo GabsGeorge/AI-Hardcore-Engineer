@@ -67,8 +67,9 @@ def make_result(
     sources: Iterable[Source] = (),
     tools_used: Iterable[ToolCallRecord] = (),
     error: str | None = None,
+    evidence: Iterable[str] = (),
 ) -> AgentResult:
-    return {
+    result: AgentResult = {
         "subtask_id": subtask["id"],
         "agent": agent,
         "answer": answer,
@@ -77,3 +78,6 @@ def make_result(
         "tools_used": list(tools_used),
         "error": error,
     }
+    if evidence:
+        result["evidence"] = list(evidence)
+    return result

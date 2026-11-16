@@ -22,19 +22,16 @@ RECENT_MESSAGES = 6
 
 def decide(results: list[AgentResult], attempts: int, settings: Settings) -> Decision:
     """Replan below CONFIDENCE_REPLAN or on errors; escalate on a result below
-    CONFIDENCE_ESCALATE_HARD or when a replanned round is still not good enough.
-    Exceção: resultados exclusivamente do `knowledge` (produtos Getnet ou público/web_search)
-    não puxam atendente humano — eles degradam com mensagem de "tente de novo mais tarde"."""
+    CONFIDENCE_ESCALATE_HARD or when a replanned round is still not good enough."""
     if not results:
         return "degrade"
     ok = [r for r in results if not r["error"]]
     if len(ok) == len(results) and min(r["confidence"] for r in ok) >= settings.confidence_replan:
         return "synthesize"
-    knowledge_only = all(r["agent"] == "knowledge" for r in results)
     if ok and min(r["confidence"] for r in ok) < settings.confidence_escalate_hard:
-        return "degrade" if knowledge_only else "escalate"
+        return "escalate"
     if attempts >= 1:
-        return "degrade" if knowledge_only else "escalate"
+        return "escalate"
     return "replan"
 
 
@@ -91,6 +88,10 @@ def _dispatch(plan: PlanModel, update: dict[str, Any]) -> Command[Any]:
                 "summary": "",
                 "pending_action": None,
             }
+        # The escalation node pauses on interrupt() before it can append its own step, so the
+        # route of a handoff turn would never show `escalation`. Record it here, as the
+        # decide → escalate branch does.
+        update["route_trace"] = ["supervisor", "escalation"]
         return Command(goto="escalation", update=update)
     sends = [
         Send(st.agent, {"subtask": st.model_dump(), "language": plan.language})

@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.core.resilience import CircuitOpen, get_breaker
 from app.observability.logging import get_logger
 from app.rag import retriever
+from app.tools import public_data
 from app.tools.interfaces import SearchKnowledgeBaseInput, WebResult, WebSearchInput
 
 MAX_WEB_RESULTS = 5
@@ -66,6 +67,15 @@ async def web_search(args: WebSearchInput, config: RunnableConfig) -> list[WebRe
         cached = None
     if cached:
         return [WebResult.model_validate(r) for r in json.loads(cached)]
+
+    figures = await public_data.lookup(args.query)
+    if figures:
+        try:
+            payload = json.dumps([r.model_dump(mode="json") for r in figures])
+            await _cache().set(key, payload, ex=VOLATILE_TTL)
+        except RedisError as exc:
+            get_logger().warning("web_cache_unavailable", error=type(exc).__name__)
+        return figures
 
     # Circuit breaker: um DuckDuckGo instável abre o circuito e as próximas chamadas falham
     # rápido (REQ-REL-03). O chamador trata CircuitOpen devolvendo lista vazia (degradado).

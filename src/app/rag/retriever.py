@@ -131,15 +131,23 @@ async def bm25_index(pool: Pool) -> Bm25Index | None:
         return cache.index
 
 
-async def dense_search(pool: Pool, query: str, k: int, lang: str | None = None) -> list[int]:
+async def dense_hits(
+    pool: Pool, query: str, k: int, lang: str | None = None
+) -> list[tuple[int, float]]:
+    """(chunk id, cosine similarity), most similar first."""
     vector = await get_embeddings().aembed_query(query)
     async with pool.connection() as conn:
         cur = await conn.execute(
-            "SELECT id FROM chunks WHERE (%(lang)s::text IS NULL OR lang = %(lang)s)"
+            "SELECT id, 1 - (embedding <=> %(vector)s::vector) AS score FROM chunks"
+            " WHERE (%(lang)s::text IS NULL OR lang = %(lang)s)"
             " ORDER BY embedding <=> %(vector)s::vector LIMIT %(k)s",
             {"lang": lang, "vector": str([float(x) for x in vector]), "k": k},
         )
-        return [r["id"] for r in await cur.fetchall()]
+        return [(r["id"], float(r["score"])) for r in await cur.fetchall()]
+
+
+async def dense_search(pool: Pool, query: str, k: int, lang: str | None = None) -> list[int]:
+    return [chunk_id for chunk_id, _ in await dense_hits(pool, query, k, lang)]
 
 
 def rrf(rankings: list[list[int]], k: int = RRF_K) -> list[tuple[int, float]]:
@@ -236,8 +244,69 @@ class KbHit(KnowledgeHit):
     fetched_at: datetime
 
 
+def dense_relevance(cosine: float, gate: float, strong: float, at_gate: float) -> float:
+    """Cosine similarity on the 0..1 relevance scale the agent's confidence uses.
+
+    The agent's confidence is min(model self-assessment, best passage score). A raw cosine of a
+    good match sits around 0.55-0.75 (text-embedding-3-small), so used as-is it would cap every
+    answer below `confidence_replan` and send correct replies to replan/escalate. Passing the
+    calibrated gate is what proves the passage is relevant, so a passage at the gate scores
+    `at_gate` (the replan threshold: retrieval is not the limiting factor) and one at `strong`
+    or above scores 1.0, linear in between. The model's own confidence still decides."""
+    if strong <= gate:
+        return 1.0
+    fraction = min(max((cosine - gate) / (strong - gate), 0.0), 1.0)
+    return at_gate + (1.0 - at_gate) * fraction
+
+
+async def _search_dense(pool: Pool, query: str, lang: str | None) -> list[KbHit]:
+    """Dense strategy: the best passage of each of the top-K distinct pages, by cosine
+    similarity at or above RAG_DENSE_THRESHOLD. CANDIDATES chunks are fetched and collapsed
+    per page, so K slots cover K pages (the unit `evals/retrieval_compare.py` measures) instead
+    of K chunks of one page. A query with no passage above the threshold returns nothing, so
+    the agent says it found nothing instead of answering from weak context."""
+    settings = get_settings()
+    threshold = settings.rag_dense_threshold
+    candidates = [h for h in await dense_hits(pool, query, CANDIDATES, lang) if h[1] >= threshold]
+    if not candidates:
+        return []
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            "SELECT c.id, c.section, c.content, d.title, d.url, d.fetched_at FROM chunks c"
+            " JOIN documents d ON d.id = c.document_id WHERE c.id = ANY(%s)",
+            ([chunk_id for chunk_id, _ in candidates],),
+        )
+        by_id = {r["id"]: r for r in await cur.fetchall()}
+    seen: set[str] = set()
+    scored: list[tuple[int, float]] = []
+    for chunk_id, score in candidates:  # most similar first: the first chunk of a page is its best
+        row = by_id.get(chunk_id)
+        if row is None or row["url"] in seen:
+            continue
+        seen.add(row["url"])
+        scored.append((chunk_id, score))
+        if len(scored) == TOP_K:
+            break
+    return [
+        KbHit(
+            chunk_id=chunk_id,
+            title=by_id[chunk_id]["title"],
+            url=by_id[chunk_id]["url"],
+            section=by_id[chunk_id]["section"],
+            content=by_id[chunk_id]["content"],
+            score=dense_relevance(
+                score, threshold, settings.rag_dense_strong, settings.confidence_replan
+            ),
+            fetched_at=by_id[chunk_id]["fetched_at"],
+        )
+        for chunk_id, score in scored
+    ]
+
+
 async def search(query: str, lang: str | None = None) -> list[KbHit]:
     pool = get_pool()
+    if get_settings().rag_strategy == "dense":
+        return await _search_dense(pool, query, lang)
     index = await bm25_index(pool)
     lexical = index.search(query, CANDIDATES, lang) if index else []
     dense = await dense_search(pool, query, CANDIDATES, lang)
@@ -252,9 +321,9 @@ async def search(query: str, lang: str | None = None) -> list[KbHit]:
         )
         by_id = {r["id"]: r for r in await cur.fetchall()}
     rows = [by_id[i] for i in fused if i in by_id]  # a chunk may vanish after a re-ingestion
-    # Rerank com degradacao: se cross-encoder cair ou estourar tempo, devolve top-k da
-    # ordem RRF com score uniforme 0.6 (acima do threshold padrao). Antes qualquer falha
-    # do reranker fazia search_knowledge_base retornar 'error' para o agente.
+    # Rerank com degradação: se o cross-encoder cair ou estourar tempo, devolve top-K da
+    # ordem RRF com score 0.6 (abaixo do confidence_replan, para o supervisor decidir
+    # replan/escalate em vez de sintetizar resposta sem sinal real).
     try:
         scored = await asyncio.wait_for(
             asyncio.to_thread(
@@ -265,78 +334,30 @@ async def search(query: str, lang: str | None = None) -> list[KbHit]:
             timeout=4.0,
         )
         threshold = get_settings().rag_relevance_threshold
-        # Reranker atua como FILTRO opcional, nao reordenador: a ordem RRF (BM25 + densa
-        # fundidos) tem recall@5 melhor que a ordem do cross-encoder no corpus curto PT do
-        # desafio. Mantemos o rerank no pipeline (requisito do enunciado); com threshold=0
-        # todas as passagens passam e usamos a ordem fundida; threshold>0 descarta ruido
-        # obvio. Evidencia em evals/retrieval_compare.py.
-        rr_scores = dict(scored)
-        # Dedup por URL mantendo a melhor passagem por pagina na ordem RRF: top-K cobre K
-        # paginas distintas em vez de K chunks que podem ser da mesma pagina. Isso melhora
-        # recall@5 significativamente (cada URL unica pesa uma vez na metrica).
-        # Threshold > 0: descartamos passagens claramente irrelevantes. Threshold = 0 (default
-        # atual): mantemos todas as passagens na ordem RRF, usando o score do reranker apenas
-        # como sinal de score (nao como filtro) — o cross-encoder atual (MS-MARCO EN) nao
-        # separa bem o corpus PT do desafio.
-        seen: set[str] = set()
-        hits: list[KbHit] = []
-        for i in range(len(rows)):
-            score = rr_scores.get(i, 0.0)
-            if threshold > 0 and score < threshold:
-                continue
-            url = rows[i]["url"]
-            if url in seen:
-                continue
-            seen.add(url)
-            hits.append(
-                KbHit(
-                    chunk_id=rows[i]["id"],
-                    title=rows[i]["title"],
-                    url=url,
-                    section=rows[i]["section"],
-                    content=rows[i]["content"],
-                    score=min(max(score, 0.0), 1.0),
-                    fetched_at=rows[i]["fetched_at"],
-                )
+        hits = [
+            KbHit(
+                chunk_id=rows[i]["id"],
+                title=rows[i]["title"],
+                url=rows[i]["url"],
+                section=rows[i]["section"],
+                content=rows[i]["content"],
+                score=min(max(score, 0.0), 1.0),
+                fetched_at=rows[i]["fetched_at"],
             )
-            if len(hits) >= TOP_K:
-                break
-        if not hits:  # nenhuma passagem passou o filtro — degrada para RRF puro
-            return [
-                KbHit(
-                    chunk_id=r["id"],
-                    title=r["title"],
-                    url=r["url"],
-                    section=r["section"],
-                    content=r["content"],
-                    score=0.85,
-                    fetched_at=r["fetched_at"],
-                )
-                for r in rows[:TOP_K]
-            ]
-        return hits
-    except (TimeoutError, Exception):  # noqa: BLE001 — degradacao proposital
-        # Score 0.85 (nao 0.6): acima de confidence_replan=0.70 do supervisor. Antes o
-        # knowledge agent limitava confidence com min(llm, score_fonte), e 0.6 forcava
-        # replan/escalate mesmo com fontes boas, resultando em resposta vazia.
-        # Dedup por URL tambem no fallback: cada entrada do top-K cobre uma pagina distinta.
-        seen_fb: set[str] = set()
-        out: list[KbHit] = []
-        for r in rows:
-            if r["url"] in seen_fb:
-                continue
-            seen_fb.add(r["url"])
-            out.append(
-                KbHit(
-                    chunk_id=r["id"],
-                    title=r["title"],
-                    url=r["url"],
-                    section=r["section"],
-                    content=r["content"],
-                    score=0.85,
-                    fetched_at=r["fetched_at"],
-                )
+            for i, score in scored
+            if score >= threshold
+        ]
+        return sorted(hits, key=lambda h: h.score, reverse=True)[:TOP_K]
+    except (TimeoutError, Exception):  # noqa: BLE001 — degradação proposital
+        return [
+            KbHit(
+                chunk_id=r["id"],
+                title=r["title"],
+                url=r["url"],
+                section=r["section"],
+                content=r["content"],
+                score=0.6,
+                fetched_at=r["fetched_at"],
             )
-            if len(out) >= TOP_K:
-                break
-        return out
+            for r in rows[:TOP_K]
+        ]
