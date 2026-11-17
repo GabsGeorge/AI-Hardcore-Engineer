@@ -94,3 +94,25 @@ async def test_reply_without_negation_goes_to_the_grounding_model(fake_llm: Fake
     )
     assert out["guardrail_flags"] == ["output:pass"]
     assert fake_llm.prompts("output_guard") != ""
+
+
+def test_grounding_verdict_combines_the_two_narrow_answers() -> None:
+    from app.guardrails.output import GroundingResult
+
+    # A reply that corrects a wrong premise is supported and not about another thing.
+    ok = GroundingResult(grounded=False, reply_supported=True, about_other_thing=False)
+    assert ok.verdict is True
+    assert (
+        GroundingResult(grounded=True, reply_supported=True, about_other_thing=True).verdict
+        is False
+    )
+    assert (
+        GroundingResult(
+            grounded=True,
+            reply_supported=False,
+            about_other_thing=False,
+        ).verdict
+        is False
+    )
+    # Without the two fields the blended answer is the fallback.
+    assert GroundingResult(grounded=False).verdict is False

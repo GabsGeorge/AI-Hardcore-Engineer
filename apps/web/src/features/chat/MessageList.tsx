@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Spinner, StatusBadge } from "@/design";
+import { Alert, Spinner, StatusBadge } from "@/design";
 import { MessageContent } from "./MessageContent";
 import { SourceList } from "./SourceList";
 import type { ChatMessage } from "./types";
@@ -25,6 +25,10 @@ export function MessageList({
             <div className="max-w-[80%] rounded-lg bg-surface-200 p-3 text-body text-ink-700">
               {message.content}
             </div>
+          </li>
+        ) : message.role === "error" ? (
+          <li key={message.id} className="max-w-[80%]">
+            <Alert tone="danger">{message.content}</Alert>
           </li>
         ) : (
           <li key={message.id} className="flex flex-col gap-2">

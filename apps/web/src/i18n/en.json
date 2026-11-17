@@ -46,6 +46,10 @@
     "thinking": "Thinking…",
     "sources": "Sources",
     "rateLimited": "Too many messages within a minute. Wait a moment before sending again.",
+    "errors": {
+      "interrupted": "The answer was interrupted before it finished. Please send your question again.",
+      "generic": "I could not answer right now. Please try again in a moment."
+    },
     "handoffLockPlaceholder": "Waiting for a human agent to reply…",
     "handoffLockHint": "While the ticket is with a human agent, new messages are blocked.",
     "handoff": {

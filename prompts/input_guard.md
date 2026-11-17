@@ -65,6 +65,9 @@ Examples of `safe` — Getnet products and operation:
 - "Quais foram minhas vendas de ontem?"
 - "Me liste em bullets as 3 principais vantagens da antecipação"
 - "What were my sales yesterday?"
+- "O que é MDR?" (payment-industry terms used by the merchant's acquirer are Getnet topics: MDR,
+  gravame, chargeback, PAT, VA/VR, antecipação, domicílio bancário, conciliação)
+- "O que é gravame?"
 - "Meu CPF é [CPF], quando cai o dinheiro das minhas vendas de ontem?"
 - "Meu CNPJ é [CNPJ], como funciona a antecipação de recebíveis?"
 - "My CPF is [CPF], what is the status of my terminal?"

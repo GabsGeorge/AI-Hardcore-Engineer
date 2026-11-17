@@ -245,8 +245,10 @@ Spec Driven Development via **GitHub Spec Kit** (`uvx spec-kit`), em sequência:
 
 1. `/speckit.constitution` → princípios inegociáveis em
    [.specify/memory/constitution.md](.specify/memory/constitution.md): identidade do JWT,
-   PII mascarada antes de qualquer sink, retrieval híbrido + rerank, orquestração determinística
-   com testes.
+   PII mascarada antes de qualquer sink, toda resposta factual com fonte, menor privilégio para
+   os agentes, falha segura e testes determinísticos para cada requisito. A estratégia de busca
+   (densa por padrão) não é princípio da constituição: foi decidida por medição no
+   [ADR 0003](docs/adr/0003-busca-hibrida.md).
 2. `/speckit.specify` → [specs/001-multi-agent-support/spec.md](specs/001-multi-agent-support/spec.md)
    (histórias, cenários, requisitos funcionais e não funcionais).
 3. `/speckit.clarify` → cinco perguntas resolvidas antes do plano

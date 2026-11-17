@@ -38,18 +38,18 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-OBS-04 | T147, T155 | tests/unit/test_online_eval.py | ✅ |
 | REQ-OBS-05 | T148, T156 | tests/contract/test_feedback.py | ✅ |
 | REQ-OBS-06 | T157, T158, T168 | tests/integration/test_golden_scenarios.py, tests/unit/test_eval_checks.py | ✅ |
-| REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_golden_scenarios.py, tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py | ✅ |
+| REQ-ORC-01 | T039, T041, T051, T127, T158 | tests/integration/test_golden_scenarios.py, tests/integration/test_graph_topology.py, tests/unit/test_supervisor_plan.py, tests/unit/test_supervisor_prompt_routing.py | ✅ |
 | REQ-ORC-02 | T091, T095, T096 | tests/integration/test_graph_parallel.py, tests/integration/test_graph_paths.py | ✅ |
 | REQ-ORC-03 | T092, T095 | tests/integration/test_graph_replan.py | ✅ |
 | REQ-ORC-04 | T009, T042, T051, T052 | tests/integration/test_graph_budget.py, tests/integration/test_graph_paths.py, tests/unit/test_config.py | ✅ |
 | REQ-ORC-05 | T038, T043, T046, T048 | tests/security/test_allowlist.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-ORC-06 | T012, T024, T040, T045, T053 | tests/integration/test_graph_state.py, tests/unit/test_migrations.py | ✅ |
 | REQ-ORC-07 | T044, T052 | tests/integration/test_language.py | ✅ |
-| REQ-RAG-01 | T068, T069, T076, T077, T079 | tests/integration/test_ingest.py, tests/integration/test_ingest_curated.py, tests/unit/test_build_curated_offers.py, tests/unit/test_crawler.py, tests/unit/test_curated_sources.py | ✅ |
+| REQ-RAG-01 | T068, T069, T076, T077, T079 | tests/integration/test_ingest.py, tests/integration/test_ingest_curated.py, tests/unit/test_build_curated_offers.py, tests/unit/test_crawler.py, tests/unit/test_crawler_popup.py, tests/unit/test_curated_sources.py | ✅ |
 | REQ-RAG-02 | T024, T069, T079 | tests/integration/test_ingest.py, tests/integration/test_ingest_curated.py | ✅ |
 | REQ-RAG-03 | T070, T078 | tests/unit/test_chunking.py | ✅ |
 | REQ-RAG-04 | T071, T080, T159 | tests/integration/test_retriever.py, tests/integration/test_retriever_dense.py, tests/integration/test_retriever_resilience.py, tests/unit/test_bm25.py, tests/unit/test_retrieval_metrics.py, tests/unit/test_rrf.py | ✅ |
-| REQ-RAG-05 | T072, T080 | tests/integration/test_multi_query.py | ✅ |
+| REQ-RAG-05 | T072, T080 | tests/integration/test_multi_query.py, tests/unit/test_prompts_acronyms.py | ✅ |
 | REQ-RAG-06 | T073, T082, T083 | tests/integration/test_knowledge.py | ✅ |
 | REQ-RAG-07 | T073, T080, T083 | tests/integration/test_knowledge.py | ✅ |
 | REQ-RAG-08 | T074, T081 | tests/unit/test_web_search.py | ✅ |

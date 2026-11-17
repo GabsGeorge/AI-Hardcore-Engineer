@@ -118,6 +118,13 @@ def load_curated(sources: Sources, base: Path = CURATED_DIR) -> list[Page]:
 
 _HTML_LANG = re.compile(rb"<html[^>]*\blang=[\"']?([a-zA-Z]{2})", re.I)
 _HEADING = re.compile(r"^#{1,6}\s+(.+)$", re.M)
+# The site's "Vamos começar o seu atendimento?" pop-up is part of every help page's HTML and the
+# extractor keeps it: the same lead-in text would open the chunks of dozens of pages and dilute
+# what each page is about.
+_SITE_POPUP = re.compile(
+    r"Vamos começar\s+o seu atendimento\?.{0,400}?informe o documento solicitado\.",
+    re.S | re.I,
+)
 
 
 def _url_lang(url: str) -> Lang:
@@ -134,7 +141,8 @@ def _extract_html(url: str, body: bytes) -> Page | None:
         include_formatting=True,
         favor_recall=True,
     )
-    if not text or not text.strip():
+    text = _SITE_POPUP.sub("", text or "")
+    if not text.strip():
         return None
     meta = trafilatura.extract_metadata(html)
     heading = _HEADING.search(text)

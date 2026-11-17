@@ -34,7 +34,10 @@ def _state(**overrides: Any) -> dict[str, Any]:
 
 async def test_valid_plan_dispatches_each_subtask_with_send(fake_llm: FakeLLM) -> None:
     fake_llm.script(supervisor=[make_plan("knowledge", "support", language="en")])
-    cmd = await supervisor(_state(), CONFIG)
+    # The message is English like the plan's language: the supervisor now overrules a planner
+    # whose language contradicts the words of the message (see settle_language).
+    english = [HumanMessage(content="What is the difference between Get Clássica and Get Smart?")]
+    cmd = await supervisor(_state(messages=english), CONFIG)
     assert isinstance(cmd, Command)
     sends = cmd.goto
     assert isinstance(sends, list) and all(isinstance(s, Send) for s in sends)
@@ -78,3 +81,27 @@ async def test_planner_sees_summary_and_recent_messages_only_masked(fake_llm: Fa
     assert "Cliente perguntou sobre a Get Smart." in prompt
     assert "Get Clássica" in prompt
     assert "cliente1988" not in prompt  # identity never reaches the model
+
+
+async def test_planner_gets_one_retry_when_its_first_plan_does_not_validate(
+    fake_llm: FakeLLM,
+) -> None:
+    # Real runs: `route: [support]` next to a knowledge subtask failed validation and the turn
+    # ended in degraded_response with no tool called. A valid second sample must be used.
+    bad = make_plan("knowledge") | {"route": ["support"]}
+    fake_llm.script(supervisor=[bad, make_plan("support")])
+    cmd = await supervisor(_state(), CONFIG)
+    assert isinstance(cmd.goto, list) and [s.node for s in cmd.goto] == ["support"]
+
+
+async def test_english_question_does_not_reach_the_specialist_as_a_portuguese_query(
+    fake_llm: FakeLLM,
+) -> None:
+    # The planner copied the Portuguese routing example as the query; the answer came back in
+    # Portuguese. The merchant's own sentence replaces it when there is one message, one subtask.
+    plan = make_plan("support", language="en")
+    plan["subtasks"][0]["query"] = "Quando cai o dinheiro de ontem?"
+    fake_llm.script(supervisor=[plan])
+    english = [HumanMessage(content="When will yesterday's sales money arrive?")]
+    cmd = await supervisor(_state(messages=english), CONFIG)
+    assert cmd.update["plan"]["subtasks"][0]["query"] == "When will yesterday's sales money arrive?"

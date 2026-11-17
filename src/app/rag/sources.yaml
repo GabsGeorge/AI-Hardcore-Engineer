@@ -11,7 +11,7 @@ allowed_domains:
   - getnet.com.br
   - getnet.net
 
-max_pages: 75
+max_pages: 150
 
 seeds:
   # Card machines (scenarios 1, 5)
@@ -50,6 +50,110 @@ seeds:
   # Public PDFs
   - url: https://site.getnet.com.br/wp-content/uploads/2025/08/Contrato-de-oferta-de-maquina-em-comodato-com-pagamento-de-taxa-de-adesao.pdf
     type: pdf
+
+  # Central de ajuda e perguntas frequentes: links descobertos no menu renderizado pelo navegador;
+  # todos têm texto no HTML (conferido com o extrator da ingestão).
+  - url: https://site.getnet.com.br/bandeiras/
+  - url: https://site.getnet.com.br/duvidas/aluguel/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/antecipacao-de-vendas/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/app-getnet/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/app-getnet-brasil/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/bandeiras/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/cancelamento-descredenciamento/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/crediario/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/get-conta/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/get-smart/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/link-de-pagamento/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/operacional/
+    type: faq
+  - url: https://site.getnet.com.br/duvidas/parcelado/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-antecipacao-de-venda/como-antecipar-sua-vendas-pelo-app/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-antecipacao-de-venda/como-habilitar-antecipacao-automatica-pelo-app/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-antecipacao-de-venda/como-habilitar-antecipacao-automatica-pelo-portal/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-cadastro/como-atualizar-seus-dados-cadastrais-no-aplicativo-getnet-brasil/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-cadastro/como-finalizar-seu-cadastro-no-aplicativo-getnet-brasil-e-comecar-a-aceitar-pagamentos/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-cadastro/como-trocar-o-domicilio-bancario/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-cancelamento/como-cancelar-a-parceria/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-cancelamento/como-cancelar-produtos-e-servicos/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-chargeback/como-estornar-uma-venda-na-maquininha-getnet/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-chargeback/o-que-e-chargeback/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-configuracoes/como-configurar-o-wi-fi-na-sua-maquininha-getnet/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-configuracoes/como-consultar-minhas-vendas/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-configuracoes/funcionalidades-portal-minha-conta-e-app-getnet-brasil/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-ecommerce/plugins-digitais-que-a-getnet-trabalha/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-erros-maquininha/erro-adq-1-50/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-erros-maquininha/erro-adq-4-83/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-erros-maquininha/erro-adq-4-91/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-gestao-de-vendas/como-acessar-as-minhas-vendas-realizadas/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-gestao-de-vendas/como-consultar-os-status-das-minhas-vendas/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-gestao-de-vendas/quais-possiveis-status-das-minhas-vendas/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-conta/como-acesso-a-minha-get-conta/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-conta/como-realizo-uma-transferencia-e-quais-os-limites-diarios/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-conta/o-que-e-a-get-conta/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-tap/como-habilitar-e-vender-com-pix-no-get-tap
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-tap/como-utilizar-o-get-tap/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-get-tap/o-que-e-o-get-tap-e-como-funciona/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-maquininha/como-fazer-uma-venda-na-maquininha-getnet/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-maquininha/como-pedir-uma-maquininha-adicional/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-pix/como-fazer-uma-venda-com-pix-na-maquininha/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-pix/como-habilitar-o-recebimento-de-vendas-via-pix-no-aplicativo-getnet-brasil/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-pix/como-utilizo-o-pix-por-biometria/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-rastreamento/como-acompanhar-entrega-get-mini/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-receba-ja/plano-de-recebimento-reduzido/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-reserva-financeira/reserva-financeira/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-taxas/taxas-por-transacao/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-voucher/como-habilitar-vale-refeicao-va-e-vale-alimentacao-vr-no-aplicativo-getnet-brasil/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-voucher/o-que-e-o-pat/
+    type: faq
+  - url: https://site.getnet.com.br/get-ajuda-whatsapp-business/descontinuacao-whatsapp-business/
+    type: faq
 
   # English — regional Santander Getnet portal (REQ-RAG-05)
   - url: https://www.getnet.net/en/

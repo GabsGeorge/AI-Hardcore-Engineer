@@ -28,6 +28,8 @@ export type ChatResponseBody = {
 
 export type ChatMessage =
   | { id: string; role: "user"; content: string }
+  // Falha do fluxo (cortado sem `done`, erro HTTP): aviso ao lojista, nunca silêncio.
+  | { id: string; role: "error"; content: string }
   | {
       id: string;
       role: "assistant";

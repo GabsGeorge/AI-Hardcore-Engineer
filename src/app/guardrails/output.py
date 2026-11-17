@@ -37,10 +37,25 @@ _UNGROUNDED: dict[str, str] = {
 
 
 class GroundingResult(BaseModel):
-    """Structured output of the ``output_guard`` role (REQ-GR-04, LLM09)."""
+    """Structured output of the ``output_guard`` role (REQ-GR-04, LLM09).
+
+    The checker answers two narrow questions and the code decides, because one blended
+    ``grounded`` made a small model anchor on the merchant's question and reject a reply that
+    corrects a wrong premise ("the debit fee is 0,1%?" → "no, it is 0,99%"). ``grounded`` stays
+    as the fallback when the two fields are absent."""
 
     grounded: bool
+    reply_supported: bool | None = None
+    about_other_thing: bool | None = None
     reason: str = Field(default="", max_length=200)
+
+    @property
+    def verdict(self) -> bool:
+        if self.reply_supported is None or self.about_other_thing is None:
+            return self.grounded
+        if self.about_other_thing:
+            return False
+        return self.reply_supported
 
 
 # Financial-promise patterns (REQ-GR-04, LLM05): a reply that commits the system to a refund,
@@ -133,9 +148,15 @@ async def _check_grounding(final: str, results: list[Any], question: str = "") -
         return None
     if not isinstance(result, GroundingResult):
         return None
-    if not result.grounded:
-        get_logger().info("output_grounding_verdict", trigger="model", reason=result.reason)
-    return result.grounded
+    if not result.verdict:
+        get_logger().info(
+            "output_grounding_verdict",
+            trigger="model",
+            reply_supported=result.reply_supported,
+            about_other_thing=result.about_other_thing,
+            reason=result.reason,
+        )
+    return result.verdict
 
 
 async def output_guardrail(state: AgentState) -> dict[str, Any]:
