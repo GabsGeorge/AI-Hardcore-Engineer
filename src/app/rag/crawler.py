@@ -25,6 +25,7 @@ from pypdf import PdfReader
 from app.observability.logging import get_logger
 
 SOURCES_FILE = Path(__file__).with_name("sources.yaml")
+CURATED_DIR = Path(__file__).with_name("curated")
 USER_AGENT = "GetnetSupportBot/1.0 (knowledge-base ingestion)"
 MAX_BYTES = 10 * 1024 * 1024
 MAX_REDIRECTS = 5
@@ -49,10 +50,24 @@ class SitemapSource(_Config):
     include: list[str] = Field(default_factory=list, description="URL substrings to keep")
 
 
+class CuratedSource(_Config):
+    """Content of a public page that the crawler cannot receive because the page builds it with
+    JavaScript (for example a fee simulator). It is captured with a real browser by
+    `scripts/capture_offers.mjs` and kept as Markdown under `curated/`. `url` is what the answer
+    cites; `path` is relative to the `curated/` directory."""
+
+    path: str
+    url: str
+    title: str
+    lang: Lang = "pt"
+    type: SourceType = "page"
+
+
 class Sources(_Config):
     allowed_domains: list[str] = Field(min_length=1)
     seeds: list[Seed] = Field(default_factory=list)
     sitemaps: list[SitemapSource] = Field(default_factory=list)
+    curated: list[CuratedSource] = Field(default_factory=list)
     max_pages: int = Field(60, ge=1)
 
 
@@ -76,6 +91,29 @@ def is_allowed(url: str, domains: list[str]) -> bool:
     if parts.scheme != "https" or parts.username or parts.password or not host:
         return False
     return any(host == d or host.endswith(f".{d}") for d in domains)
+
+
+def load_curated(sources: Sources, base: Path = CURATED_DIR) -> list[Page]:
+    """Pages for the curated sources. A curated page can only cite an allowed domain, and its file
+    must live inside `base` (the config is trusted, but a `..` path would still be a mistake)."""
+    root = base.resolve()
+    pages: list[Page] = []
+    for item in sources.curated:
+        if not is_allowed(item.url, sources.allowed_domains):
+            raise ValueError(f"curated source outside the domain allowlist: {item.url}")
+        file = (root / item.path).resolve()
+        if not file.is_relative_to(root):
+            raise ValueError(f"curated path escapes the curated directory: {item.path}")
+        pages.append(
+            Page(
+                url=item.url,
+                title=item.title,
+                lang=item.lang,
+                source_type=item.type,
+                text=file.read_text(encoding="utf-8"),
+            )
+        )
+    return pages
 
 
 _HTML_LANG = re.compile(rb"<html[^>]*\blang=[\"']?([a-zA-Z]{2})", re.I)

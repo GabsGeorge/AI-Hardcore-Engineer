@@ -84,3 +84,12 @@ seeds:
 sitemaps:
   - url: https://site.getnet.com.br/post-sitemap.xml
     include: [maquininha, pix, link-de-pagamento, antecip, recebimento, tap, crediario]
+
+# Páginas cujo conteúdo o site monta com JavaScript, então o crawler comum não o recebe. São
+# capturadas com um navegador (scripts/capture_offers.mjs -> scripts/build_curated_offers.py) e
+# guardadas em curated/. A URL citada ao lojista aponta para a seção da página.
+curated:
+  - path: todas-as-maquininhas.md
+    url: https://site.getnet.com.br/todas-as-maquininhas/#offers-card
+    title: "Maquininhas Getnet: taxas por faixa de faturamento, preços e recursos"
+    lang: pt

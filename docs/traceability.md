@@ -45,8 +45,8 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 | REQ-ORC-05 | T038, T043, T046, T048 | tests/security/test_allowlist.py, tests/unit/test_tool_interfaces.py | ✅ |
 | REQ-ORC-06 | T012, T024, T040, T045, T053 | tests/integration/test_graph_state.py, tests/unit/test_migrations.py | ✅ |
 | REQ-ORC-07 | T044, T052 | tests/integration/test_language.py | ✅ |
-| REQ-RAG-01 | T068, T069, T076, T077, T079 | tests/integration/test_ingest.py, tests/unit/test_crawler.py | ✅ |
-| REQ-RAG-02 | T024, T069, T079 | tests/integration/test_ingest.py | ✅ |
+| REQ-RAG-01 | T068, T069, T076, T077, T079 | tests/integration/test_ingest.py, tests/integration/test_ingest_curated.py, tests/unit/test_build_curated_offers.py, tests/unit/test_crawler.py, tests/unit/test_curated_sources.py | ✅ |
+| REQ-RAG-02 | T024, T069, T079 | tests/integration/test_ingest.py, tests/integration/test_ingest_curated.py | ✅ |
 | REQ-RAG-03 | T070, T078 | tests/unit/test_chunking.py | ✅ |
 | REQ-RAG-04 | T071, T080, T159 | tests/integration/test_retriever.py, tests/integration/test_retriever_dense.py, tests/integration/test_retriever_resilience.py, tests/unit/test_bm25.py, tests/unit/test_retrieval_metrics.py, tests/unit/test_rrf.py | ✅ |
 | REQ-RAG-05 | T072, T080 | tests/integration/test_multi_query.py | ✅ |
