@@ -6,7 +6,7 @@ decided by `decide`, a pure function, so routing and termination are testable wi
 
 from typing import Any, Literal
 
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command, Send
 
@@ -14,6 +14,7 @@ from app.core.config import Settings, get_settings
 from app.core.llm import get_model
 from app.core.prompts import load_prompt
 from app.graph.state import AgentResult, AgentState, PlanModel
+from app.graph.synthesize import language_cues, settle_language
 from app.observability.metrics import ROUTE_TAKEN, TOKENS
 
 Decision = Literal["synthesize", "replan", "escalate", "degrade"]
@@ -52,6 +53,19 @@ def _planner_messages(state: AgentState) -> list[BaseMessage]:
     return messages
 
 
+def keep_query_language(plan: PlanModel, state: AgentState) -> None:
+    """The planner copies the Portuguese routing examples as the subtask query, so an English
+    question reached the specialists as "Quando cai o dinheiro de ontem?" and came back answered
+    in Portuguese (smoke 03/en, 07/en). With one merchant message and one subtask, a query that
+    reads Portuguese for an English message is replaced by the merchant's own sentence."""
+    humans = [m for m in state["messages"] if isinstance(m, HumanMessage)]
+    if len(humans) != 1 or len(plan.subtasks) != 1:
+        return
+    text = str(humans[0].content)
+    if language_cues(text) == "en" and language_cues(plan.subtasks[0].query) == "pt":
+        plan.subtasks[0].query = text[:1000]
+
+
 async def plan_turn(state: AgentState) -> tuple[PlanModel | None, int]:
     """Chama o planner com um span dedicado anotado com a versão do prompt (REQ-OBS-02)."""
     from app.observability.tracing import get_tracer, set_prompt_version
@@ -59,18 +73,33 @@ async def plan_turn(state: AgentState) -> tuple[PlanModel | None, int]:
     with get_tracer().start_as_current_span("supervisor.plan") as span:
         set_prompt_version(span, "supervisor")
         planner = get_model("supervisor").with_structured_output(PlanModel, include_raw=True)
-        try:
-            out = await planner.ainvoke(_planner_messages(state))
-        except Exception as exc:
-            span.record_exception(exc)
-            return None, 0
-        usage = getattr(out.get("raw"), "usage_metadata", None) or {}
-        tokens = int(usage.get("total_tokens", 0))
-        if tokens:
-            TOKENS.labels("supervisor").inc(tokens)
-            span.set_attribute("llm.tokens", tokens)
-        parsed = out.get("parsed")
+        # One retry: the planner sometimes lists `route: [support]` while also planning a knowledge
+        # subtask (a ValidationError), and 3 of 8 identical "Minha máquina não conecta" turns ended
+        # in `degraded_response` with no tool called. A second sample almost always validates.
+        tokens = 0
+        parsed: Any = None
+        for _attempt in (1, 2):
+            try:
+                out = await planner.ainvoke(_planner_messages(state))
+            except Exception as exc:
+                span.record_exception(exc)
+                continue
+            usage = getattr(out.get("raw"), "usage_metadata", None) or {}
+            used = int(usage.get("total_tokens", 0))
+            tokens += used
+            if used:
+                TOKENS.labels("supervisor").inc(used)
+                span.set_attribute("llm.tokens", tokens)
+            parsed = out.get("parsed")
+            if isinstance(parsed, PlanModel):
+                break
         if isinstance(parsed, PlanModel):
+            keep_query_language(parsed, state)
+            last_user = next(
+                (m for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), None
+            )
+            if last_user is not None:
+                parsed.language = settle_language(str(last_user.content), parsed.language)
             span.set_attribute("plan.route", ",".join(parsed.route))
             span.set_attribute("plan.language", parsed.language or "")
             return parsed, tokens

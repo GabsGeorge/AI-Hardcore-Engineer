@@ -34,7 +34,9 @@ def _as_data(text: str) -> str:
 # EN-only cues: common English function words that don't collide with Portuguese articles.
 _EN_HINTS = re.compile(
     r"\b(the|what|when|how|can|my|is|are|do|does|will|with|which|why|you|today|please|"
-    r"write|about|short|would|should|could|from|their|there|they|we)\b",
+    r"write|about|short|would|should|could|from|their|there|they|we|weather|forecast|rate|"
+    r"exchange|work|works|installments|receivables|advance|money|arrive|yesterday|"
+    r"yesterday's|sales|tomorrow|and|of|to|in|for)\b",
     re.I,
 )
 # PT-only cues: words that don't appear in English; bare 'a'/'o' are left out (also EN articles).
@@ -50,6 +52,25 @@ def guess_language(text: str) -> str:
     en = len(_EN_HINTS.findall(text))
     pt = len(_PT_HINTS.findall(text))
     return "pt" if pt > en else "en" if en else "pt"
+
+
+def language_cues(text: str) -> str | None:
+    """ "en" or "pt" when the word cues clearly favour one (twice as many hits), else None."""
+    en = len(_EN_HINTS.findall(text))
+    pt = len(_PT_HINTS.findall(text))
+    if en and en >= 2 * pt:
+        return "en"
+    if pt and pt >= 2 * en:
+        return "pt"
+    return None
+
+
+def settle_language(text: str, planned: str) -> str:
+    """The planner model (gpt-4o-mini) calls English questions about Brazilian topics ("How do
+    installments work in crediário?") Portuguese, and the whole answer then comes back in the wrong
+    language. When the word cues of the message point one way only, they overrule it."""
+    # "do" is a Portuguese word and an English auxiliary, so one stray cue must not decide.
+    return language_cues(text) or planned
 
 
 def _language(state: AgentState) -> str:

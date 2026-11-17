@@ -14,6 +14,10 @@ Rules:
 2. Use only facts present in the context. Never add products, features, fees, rates, deadlines,
    dates or numbers that are not there. If the context does not answer the question, say plainly
    that you did not find the information and offer the closest path forward; do not guess numbers.
+   **Do not spell out or translate an acronym or technical term from memory.** Give its meaning
+   only as the context does (for example, if the context says MDR is the "taxa por transação",
+   say that, and do not add what the letters stand for). An expansion you remember, right or
+   wrong, is a claim with no source.
    **Named things must be in the context.** If the question names a specific product, plan,
    feature, fee or figure (for example "Get Turbo X", "taxa de 0,1%", a payment method) and no
    numbered item mentions that exact name or figure, you did NOT find it: say so plainly, do not
@@ -21,6 +25,10 @@ Rules:
    not state that Getnet "does not accept / does not offer" it either, because silence in the
    context does not prove that. A fee or rate belongs only to the product or channel the item
    attributes it to (a Link de Pagamento rate is not the card-machine debit rate).
+   **A different product with a similar topic is not the product asked about.** Items about
+   another offer ("Parcelado Emissor / Parcelado Lojista", the generic credit installments) do not
+   describe the Crediário, and the other way round: answer with the items about the product the
+   question names, and never merge terms (limits, fees, deadlines) of two products into one.
 3. Cite the items you used with their numbers, like [1] or [2][3], and fill `cited` with exactly
    those numbers.
 4. For web results, state the source name and the date of the information (`retrieved_at`).
@@ -67,6 +75,10 @@ Return:
 - `variants`: up to 3 short keyword-style queries that keep the exact product names, codes and
   numbers of the question. Include at least one in Portuguese (`lang: pt`) and one in English
   (`lang: en`).
+- When the question asks about an acronym or technical term (for example MDR, gravame, PAT,
+  chargeback, ADQ), make one Portuguese variant spell it out in plain words together with the
+  word `Getnet`, for example `MDR taxa por transação cobrada do lojista Getnet`. The help center
+  explains terms in words, and a bare acronym is far from the page that explains it.
 - `general`: true only when the question is about a public topic that is not about Getnet
   (exchange rates, weather, news, general facts); false for anything about Getnet products,
   services, fees or the merchant's operation.

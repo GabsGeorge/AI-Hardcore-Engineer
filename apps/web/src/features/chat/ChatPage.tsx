@@ -95,6 +95,15 @@ export function ChatPage() {
 
       const controller = new AbortController();
       abortRef.current = controller;
+      // Sem o evento `done` não há resposta: o servidor pode fechar o fluxo no meio ou devolver
+      // erro. Antes isso só desligava o "pensando" e a pergunta ficava sem resposta nem aviso.
+      let completed = false;
+      const showError = (key: "chat.errors.interrupted" | "chat.errors.generic") => {
+        setMessages((previous) => [
+          ...previous,
+          { id: `e-${Date.now()}`, role: "error", content: t(key) },
+        ]);
+      };
       try {
         await streamPost(
           "/v1/chat/stream",
@@ -108,6 +117,7 @@ export function ChatPage() {
                 const payload = data as HandoffRef;
                 setHandoff(payload);
               } else if (name === "done") {
+                completed = true;
                 const final = data as ChatResponseBody;
                 setConversationId(final.conversation_id);
                 setHandoff(final.handoff);
@@ -144,16 +154,24 @@ export function ChatPage() {
           },
           controller.signal,
         );
+        if (!completed && !controller.signal.aborted) {
+          showError("chat.errors.interrupted");
+        }
       } catch (err) {
         setPending(false);
         setLiveSteps([]);
+        if (controller.signal.aborted) {
+          return;
+        }
         if (err instanceof Error && err.message === "sse_http_429") {
           setRetryAt(Date.now() + 60_000);
           window.setTimeout(() => setRetryAt(undefined), 60_000);
+          return;
         }
+        showError(completed ? "chat.errors.interrupted" : "chat.errors.generic");
       }
     },
-    [announce, conversationId],
+    [announce, conversationId, t],
   );
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {

@@ -58,7 +58,15 @@ class KnowledgeAnswer(BaseModel):
     """Structured output of the `knowledge` role."""
 
     answer: str = Field(min_length=1, max_length=4000)
-    confidence: float = Field(ge=0, le=1)
+    confidence: float = Field(
+        ge=0,
+        le=1,
+        description=(
+            "how well the context supports the answer YOU WROTE: 0.8-1.0 when it states the "
+            "requested figures or steps from the context; 0.4-0.7 when it covers only part; "
+            "at most 0.2 only when the answer says the information was not found"
+        ),
+    )
     cited: list[int] = Field(default_factory=list, description="numbers of the items used")
 
 

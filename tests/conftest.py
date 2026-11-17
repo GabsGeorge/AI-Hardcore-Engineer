@@ -7,6 +7,9 @@ from collections.abc import AsyncIterator, Iterator
 
 # Test environment must be set before the app reads its settings.
 os.environ.setdefault("APP_ENV", "test")
+# The retrieval tests exercise the hybrid + rerank pipeline (FakeReranker); the product default
+# is dense. Pinned here so `pytest` outside compose sees the same strategy (compose sets it too).
+os.environ.setdefault("RAG_STRATEGY", "hybrid_rerank")
 os.environ.setdefault("JWT_SECRET", secrets.token_hex(32))
 os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")

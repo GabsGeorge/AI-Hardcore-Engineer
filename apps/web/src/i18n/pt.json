@@ -46,6 +46,10 @@
     "thinking": "Pensando…",
     "sources": "Fontes",
     "rateLimited": "Muitas mensagens em um minuto. Aguarde um instante antes de enviar de novo.",
+    "errors": {
+      "interrupted": "A resposta foi interrompida antes de terminar. Envie a pergunta de novo.",
+      "generic": "Não consegui responder agora. Tente de novo em instantes."
+    },
     "handoffLockPlaceholder": "Aguardando atendente responder…",
     "handoffLockHint": "Enquanto o chamado está em atendimento humano, novas mensagens ficam bloqueadas.",
     "handoff": {
