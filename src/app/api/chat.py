@@ -69,8 +69,11 @@ def build_response(state: dict[str, Any], conversation_id: UUID, trace_id: str) 
     ok = [r for r in results if not r.get("error")]
     flags = state.get("guardrail_flags") or []
     escalation = state.get("escalation") or {}
+    output_flag = _flag(flags, "output", ("blocked", "rewritten"))
     sources: dict[str, dict[str, Any]] = {}
-    for r in ok:
+    # A reply the output guard replaced ("não encontrei base suficiente", a rewritten promise) is
+    # no longer built on the consulted pages; listing them under it reads as if it were.
+    for r in [] if output_flag in ("blocked", "rewritten") else ok:
         for src in r.get("sources", []):
             sources.setdefault(src["url"], src)
     return ChatResponse(
@@ -85,7 +88,7 @@ def build_response(state: dict[str, Any], conversation_id: UUID, trace_id: str) 
         ),
         guardrails=GuardrailsResult(
             input=_flag(flags, "input", ("blocked", "masked")),
-            output=_flag(flags, "output", ("blocked", "rewritten")),
+            output=output_flag,
         ),
         trace_id=trace_id,
     )

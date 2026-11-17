@@ -4,7 +4,7 @@ Gerado por `scripts/check_traceability.py` (REQ-INF-04).
 
 | REQ | Tarefa(s) | Teste(s) | Entregue |
 |---|---|---|---|
-| REQ-API-01 | T030, T075 | tests/contract/test_chat_contract.py, tests/integration/test_chat_flow.py | ✅ |
+| REQ-API-01 | T030, T075 | tests/contract/test_chat_contract.py, tests/integration/test_chat_flow.py, tests/unit/test_build_response_sources.py | ✅ |
 | REQ-API-02 | T028, T054, T075, T127, T162 | tests/contract/test_admin_api.py, tests/contract/test_chat_contract.py, tests/contract/test_me_conversations.py, tests/contract/test_openapi_fuzz.py, tests/integration/test_admin_invite.py, tests/integration/test_admin_link_merchant.py, tests/integration/test_chat_flow.py | ✅ |
 | REQ-API-03 | T015, T020, T028 | tests/contract/test_chat_validation.py | ✅ |
 | REQ-API-04 | T016, T031 | tests/integration/test_health.py | ✅ |

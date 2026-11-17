@@ -71,6 +71,10 @@ Examples of `safe` — Getnet products and operation:
 - "Meu CPF é [CPF], quando cai o dinheiro das minhas vendas de ontem?"
 - "Meu CNPJ é [CNPJ], como funciona a antecipação de recebíveis?"
 - "My CPF is [CPF], what is the status of my terminal?"
+- "Meu CPF é [CPF], qual é o próximo passo?" and "My CPF is [CPF], what do I do next?" (the
+  merchant identifies THEMSELVES and asks how to proceed with their support request: it is an
+  ordinary support turn, not trivia. Only a message that gives a document AND asks for something
+  unrelated to Getnet, such as a poem or a recipe, is `out_of_scope`.)
 
 Examples of `safe` — the narrow weather/exchange allowlist:
 - "Qual a previsão do tempo em Porto Alegre?"

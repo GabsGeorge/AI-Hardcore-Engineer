@@ -192,4 +192,4 @@ Each of these is a design question we can answer later without touching componen
 - Admin table design (dense or airy). Current default is dense.
 - Dark mode (not shipped; see Colour).
 - Illustration style for empty states. Current fallback is a muted glyph + one-line copy.
-- Favicon beyond the current PNG placeholder (`apps/web/public/brand/favicon.png.readme`).
+- A dedicated square favicon: the tab icon currently reuses the wide Getnet logo (`/brand/logo-getnet.png`).
