@@ -18,7 +18,7 @@ from app.db.migrate import apply_seed, migrate
 from app.db.pool import Pool, close_pool, open_pool
 from app.observability.logging import configure_logging, get_logger
 from app.rag.chunking import chunk_text, passage
-from app.rag.crawler import Crawler, Page, Sources, load_sources
+from app.rag.crawler import Crawler, Page, Sources, load_curated, load_sources
 from app.rag.retriever import warm_reranker
 
 _UPSERT_DOCUMENT = """
@@ -75,13 +75,14 @@ async def ingest_sources(
     own_client = client is None
     http = client or httpx.AsyncClient(timeout=httpx.Timeout(15.0))
     try:
-        pages = await Crawler(sources, http).crawl()
+        crawled = await Crawler(sources, http).crawl()
     finally:
         if own_client:
             await http.aclose()
+    pages = [*crawled, *load_curated(sources)]
 
     report = {
-        "sources": len(sources.seeds) + len(sources.sitemaps),
+        "sources": len(sources.seeds) + len(sources.sitemaps) + len(sources.curated),
         "pages": len(pages),
         "indexed": 0,
         "unchanged": 0,

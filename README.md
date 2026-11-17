@@ -98,6 +98,15 @@ Diagrama completo em [docs/architecture.drawio](docs/architecture.drawio).
 4. Nó Knowledge compõe a resposta com citações; o grounding do guardrail de saída confere
    cada afirmação contra o **texto** das passagens e a pergunta (ver "Guardrails").
 
+**Fontes curadas.** O site monta partes de algumas páginas com JavaScript (por exemplo o simulador
+de taxas e os cartões das maquininhas de `/todas-as-maquininhas/`), e o crawler comum não as
+recebe. `scripts/capture_offers.mjs` abre a página num navegador local, clica em cada faixa de
+faturamento e grava o que aparece; `scripts/build_curated_offers.py` converte a captura em Markdown
+(`src/app/rag/curated/`, sem nenhum número digitado à mão). A ingestão trata esse arquivo como
+qualquer página e a resposta cita o link da seção (`#offers-card`). As taxas são de campanha
+(Black Friday) e valem para Visa / Master; o texto registra a data da captura. Para atualizar:
+`node scripts/capture_offers.mjs && python scripts/build_curated_offers.py`, depois a ingestão.
+
 A estratégia padrão foi escolhida pelos dados, no conjunto rotulado de 14 perguntas — detalhes,
 calibração do limiar e limitações em
 [ADR 0003](docs/adr/0003-busca-hibrida.md#métricas-medidas):
