@@ -1,0 +1,107 @@
+# Deploy em VPS com EasyPanel (servico "Compose", origem Git).
+# O Traefik do EasyPanel ja ocupa as portas 80/443 do servidor, entao o site sai em 8080.
+# Variaveis (aba Environment do servico): veja docs/deploy-easypanel.md.
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "max_connections=50"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.1-alpine
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  ingest:
+    build: { context: ., target: runtime }
+    environment: &app-env
+      APP_ENV: ${APP_ENV:-local}
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/app
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?defina OPENAI_API_KEY}
+      OPENAI_MODEL_PRIMARY: ${OPENAI_MODEL_PRIMARY:-gpt-4o-mini}
+      OPENAI_MODEL_FALLBACK: ${OPENAI_MODEL_FALLBACK:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET:?defina SESSION_SECRET}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER:?defina PASSWORD_PEPPER}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-admin@getnet.example.com}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:?defina ADMIN_SEED_PASSWORD}
+      SMTP_URL: ${SMTP_URL:-smtp://mailpit:1025}
+      WEB_BASE_URL: ${WEB_BASE_URL:?defina WEB_BASE_URL}
+      RAG_STRATEGY: ${RAG_STRATEGY:-dense}
+      SKIP_RERANKER: "1"
+    command: ["python", "-m", "app.rag.ingest"]
+    volumes:
+      - models-cache:/home/app/.cache
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Cria o admin (ADMIN_SEED_EMAIL / ADMIN_SEED_PASSWORD) uma vez; se ja existir, sai sem mexer.
+  seed-admin:
+    build: { context: ., target: runtime }
+    environment: *app-env
+    command: ["python", "scripts/create_demo_admin.py"]
+    depends_on:
+      ingest: { condition: service_completed_successfully }
+    restart: "no"
+
+  api:
+    build: { context: ., target: runtime }
+    environment: *app-env
+    expose: ["8000"]
+    volumes:
+      - models-cache:/home/app/.cache
+    depends_on:
+      ingest: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      mailpit: { condition: service_started }
+    mem_limit: 2g
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.21.5
+    environment:
+      MP_MAX_MESSAGES: "200"
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      # Protege a caixa com usuario:senha: sem isso, qualquer um le os links de redefinicao
+      # de senha e toma as contas.
+      MP_UI_AUTH: ${MAILPIT_UI_AUTH:?defina MAILPIT_UI_AUTH no formato usuario:senha}
+    ports:
+      # Caixa de entrada de demonstracao: e por aqui que voce le o link de confirmacao do
+      # cadastro. Troque por um SMTP real (SMTP_URL) e remova esta porta.
+      - "8025:8025"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api: { condition: service_started }
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  models-cache:
